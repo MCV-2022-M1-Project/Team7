@@ -15,8 +15,5 @@ class Evaluator:
     def __init__(self, dataset: Dataset, preprocessing: List[Preprocessing], algorithm: FeaturesExtractor) -> None:
         pass
 
-    def extract_features(self) -> None:
-        pass
-
-    def compute_metrics(self, save: bool) -> Dict[str, float]:
+    def evaluate(self) -> None:
         pass

@@ -42,8 +42,8 @@ class Registry:
         cls._features_extractors[cl.name] = cl
 
     @classmethod
-    def register_dataset(cls, cl) -> None:
-        cls._datasets[cl.name] = cl
+    def register_dataset(cls, name: str, dataset: Dataset) -> None:
+        cls._datasets[name] = dataset
 
     @classmethod
     def register_metric(cls, cl) -> None:

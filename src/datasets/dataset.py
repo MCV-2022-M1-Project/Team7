@@ -33,18 +33,24 @@ class Dataset:
             self.images.append(image)
 
         for path in ann_paths:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, "r") as f:
                 ann = f.read()[2:-2].replace("'", "").split(", ")
 
             self.annotations.append(tuple(ann))
 
+    def size(self) -> int:
+        return len(self.images)
+
     def get_item(self, id: int) -> Sample:
+        return self.__getitem__(id)
+
+    def __iter__(self):
+        return (self.__getitem__(id) for id in range(self.size()))
+
+    def __getitem__(self, id: int) -> Sample:
         return Sample(
             id,
             self.masks[id],
             self.images[id],
             self.annotations[id]
         )
-
-    def __getitem__(self, id: int) -> Sample:
-        return self.get_item(id)
