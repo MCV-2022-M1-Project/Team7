@@ -9,3 +9,4 @@ conda activate mcv-m1
 ```
 pip install -r requirements.txt
 ```
+The dataset can be found at this[https://drive.google.com/drive/folders/1wKJYx0Dc8KpFrFfejYnSOd1nVqs2ss7z?usp=sharing] folder
