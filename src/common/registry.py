@@ -55,16 +55,28 @@ class Registry:
 
     @classmethod
     def get_preprocessing(cls, name: str) -> Preprocessing:
+        if name not in cls._preprocessing:
+            raise Exception(f"Preprocessing class not registered. Available options are: {', '.join(cls._preprocessing)}")
+
         return cls._preprocessing[name]
 
     @classmethod
     def get_features_extractor(cls, name: str) -> FeaturesExtractor:
+        if name not in cls._features_extractors:
+            raise Exception(f"Feature extractor not registered. Available options are: {', '.join(cls._features_extractors)}")
+
         return cls._features_extractors[name]
 
     @classmethod
     def get_dataset(cls, name: str) -> Dataset:
+        if name not in cls._datasets:
+            raise Exception(f"Dataset not registered. Available options are: {', '.join(cls._datasets)}")
+
         return cls._datasets[name]
 
     @classmethod
     def get_metric(cls, name: str) -> Metric:
+        if name not in cls._metrics:
+            raise Exception(f"Metric not registered. Available options are: {', '.join(cls._metrics)}")
+
         return cls._metrics[name]
