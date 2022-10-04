@@ -16,9 +16,8 @@ def __parse_args() -> argparse.Namespace:
 
 
 def main(args: argparse.Namespace):
-    # dataset = Dataset(args.dataset_dir)
+    dataset = Dataset(args.dataset_dir)
     example = Registry.get_features_extractor("example_extractor")
-    pass
 
 
 if __name__ == "__main__":
