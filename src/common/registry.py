@@ -1,20 +1,3 @@
-"""
-Registry serves as a global storage for all configs that are used in the project.
-
-Usage:
-from src.common.registry import Registry
-
-# Register a config
-Registry.register("trainer_config", trainer_config)
-Registry.register("model_config", model_config)
-Registry.register("dataset_config", dataset_config)
-
-# Access a config
-trainer_config = Registry.get("trainer_config")
-model_config = Registry.get("model_config")
-dataset_config = Registry.get("dataset_config")
-"""
-
 from typing import Any, Dict
 
 from src.preprocessing.base import Preprocessing
@@ -24,6 +7,22 @@ from src.metrics.base import Metric
 
 
 class Registry:
+    """
+    Registry serves as a global storage for all configs that are used in the project.
+
+    Usage:
+    from src.common.registry import Registry
+
+    # Register a config or a class
+    Registry.register("example_config", config_dict)
+    Registry.register_preprocessing
+    ...
+
+    # Access a config
+    example_config = Registry.get("example_config")
+    example = Registry.get_preprocessing("example_preprocessing_method")
+    ...
+    """
     _registry: Dict[str, Any] = {}
     _preprocessing: Dict[str, Preprocessing] = {}
     _features_extractors: Dict[str, FeaturesExtractor] = {}
