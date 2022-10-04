@@ -1,0 +1,8 @@
+numpy
+imageio
+docopt
+scikit-image
+sklearn
+ml_metrics 
+opencv-contrib-python
+pytesseract
