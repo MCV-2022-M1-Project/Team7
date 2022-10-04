@@ -2,7 +2,7 @@
 ## Setup 
 1. Create a new Conda environment.
 ```
-conda create -n "mcv-m1" python=3.7
+conda create -n "mcv-m1" python=3.8
 conda activate mcv-m1
 ```
 2. Install requirements:

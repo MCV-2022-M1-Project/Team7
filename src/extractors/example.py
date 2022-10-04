@@ -2,9 +2,11 @@ import array as np
 import numpy as np
 from typing import Dict
 
-from extractors.base import FeaturesExtractor
+from src.common.registry import Registry
+from src.extractors.base import FeaturesExtractor
 
 
+@Registry.register_features_extractor
 class ExampleExtractor(FeaturesExtractor):
     name: str = "example_extractor"
 

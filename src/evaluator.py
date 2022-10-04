@@ -1,8 +1,8 @@
 from typing import Dict, List
 
-from datasets.dataset import Dataset
-from extractors.base import FeaturesExtractor
-from preprocessing.base import Preprocessing
+from src.datasets.dataset import Dataset
+from src.extractors.base import FeaturesExtractor
+from src.preprocessing.base import Preprocessing
 
 
 class Evaluator:
