@@ -6,5 +6,5 @@ from typing import Protocol, List
 class Metric(Protocol):
     name: str
     
-    def compute(features: np.ndarray) -> List[float]:
+    def compute(self, features: np.ndarray) -> List[float]:
         pass

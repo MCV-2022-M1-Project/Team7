@@ -12,7 +12,7 @@ class Evaluator:
     Extract features
     Metrics
     """
-    def __init__(self, dataset: Dataset, preprocessing: List[Preprocessing], algorithm: FeaturesExtractor) -> None:
+    def __init__(self) -> None:
         pass
 
     def evaluate(self) -> None:

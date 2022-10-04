@@ -25,5 +25,5 @@ class Runner:
                 image = pp.preprocess(image)
 
             features = self.extractor.run(image)
-            
+
 

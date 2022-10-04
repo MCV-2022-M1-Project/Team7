@@ -35,11 +35,11 @@ class Registry:
 
     @classmethod
     def register_preprocessing(cls, cl) -> None:
-        cls._preprocessing[cl.name] = cl
+        cls._preprocessing[cl.name] = cl()
 
     @classmethod
     def register_features_extractor(cls, cl) -> None:
-        cls._features_extractors[cl.name] = cl
+        cls._features_extractors[cl.name] = cl()
 
     @classmethod
     def register_dataset(cls, name: str, dataset: Dataset) -> None:
@@ -47,7 +47,7 @@ class Registry:
 
     @classmethod
     def register_metric(cls, cl) -> None:
-        cls._metrics[cl.name] = cl
+        cls._metrics[cl.name] = cl()
 
     @classmethod
     def get(cls, name: str) -> Any:
