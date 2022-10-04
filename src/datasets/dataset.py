@@ -1,0 +1,50 @@
+import os
+import numpy as np
+import cv2
+from typing import List, Tuple
+from glob import glob
+
+from dataclasses import dataclass
+
+
+@dataclass
+class Sample:
+    id: int
+    mask: np.ndarray
+    image: np.ndarray
+    annotation: Tuple[str, str]
+
+
+class Dataset:
+    def __init__(self, path: str) -> None:
+        mask_paths = glob(os.path.join(path, "*.png"))
+        image_paths = glob(os.path.join(path, "*.jpg"))
+        ann_paths = glob(os.path.join(path, "*.txt"))
+        self.masks: List[np.ndarray] = []
+        self.images: List[np.ndarray] = []
+        self.annotations: List[Tuple[str, str]] = []
+
+        for path in mask_paths:
+            mask = cv2.imread(path)
+            self.masks.append(mask)
+
+        for path in image_paths:
+            image = cv2.imread(path)
+            self.images.append(image)
+
+        for path in ann_paths:
+            with open(path, "r", encoding="utf-8") as f:
+                ann = f.read()[2:-2].replace("'", "").split(", ")
+
+            self.annotations.append(tuple(ann))
+
+    def get_item(self, id: int) -> Sample:
+        return Sample(
+            id,
+            self.masks[id],
+            self.images[id],
+            self.annotations[id]
+        )
+
+    def __getitem__(self, id: int) -> Sample:
+        return self.get_item(id)

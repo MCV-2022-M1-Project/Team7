@@ -3,6 +3,6 @@ imageio
 docopt
 scikit-image
 sklearn
-ml_metrics 
+ml_metrics==0.1.2
 opencv-contrib-python
 pytesseract
