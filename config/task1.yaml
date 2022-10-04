@@ -1,0 +1,15 @@
+task:
+  name: retrieval
+
+  features_extractor: 
+    name: histogram
+
+  metrics:
+    - name: map
+      distance: euclidean
+
+  preprocessing:
+    - masking
+  
+datasets:
+  - dev

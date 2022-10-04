@@ -10,7 +10,7 @@ from src.extractors.base import FeaturesExtractor
 class ExampleExtractor(FeaturesExtractor):
     name: str = "example_extractor"
 
-    def run(self, features: np.ndarray) -> Dict[str, np.ndarray]:
+    def run(self, image: np.ndarray) -> Dict[str, np.ndarray]:
         #do stuff
         return {
             "output": np.array([1,2,3,4]),
