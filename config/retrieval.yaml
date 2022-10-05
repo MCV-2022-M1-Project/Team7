@@ -9,12 +9,11 @@ task:
 
   metrics:
       - name: raw_accuracy
-  #   - name: mae
-  #   - name: avg_mae
-  #   - name: precision
-  #   - name: recall
-  #   - name: f1
-
+      - name: euclidian_distance
+      - name: l1_distance
+      - name: chi2_distance
+      - name: hellinger_kernel_distance
+      - name: histogram_intersection_similarity
   # preprocessing:
   #   - name: combined_mask_preprocessor
   #     channel: 0
