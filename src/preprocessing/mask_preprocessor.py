@@ -91,7 +91,7 @@ class LocalVarianceMaskPreprocessor(Preprocessing):
 
         '''
 
-        run(**kwargs) takes an image as an imput and process standard deviation of each row and column.
+        run(**kwargs) takes an image as an imput and process standard deviation of local areas of fixed size.
         Thresholds and operate boolean and for masking.
 
         Some asumptions made here: 
@@ -114,7 +114,7 @@ class LocalVarianceMaskPreprocessor(Preprocessing):
         
         '''
 
-        #TODO: Precondition: Channel first or channel last?
+        #TODO: Precondition: Channel first or channel last? + Comments
         sample_image = image[:, :, channel]
         shape = sample_image.shape
         mask = np.zeros_like(sample_image)
@@ -131,5 +131,40 @@ class LocalVarianceMaskPreprocessor(Preprocessing):
         return {"result": image[mask], "mask": mask}
 
 
+@Registry.register_preprocessing
+class CombinedMaskPreprocessor(Preprocessing):
+    name: str = "combined_mask_preprocessor"
+
+
+    def run(self, image: np.ndarray, channel: int = 0, kernel_size: int = 5, thr_global: float = 20, thr_local: float = 5, fill_holes: bool = True, metric: Callable = sd) -> Dict[str, np.ndarray]:
+
+        '''
+
+        run(**kwargs) takes an image as an imput and process both LocalVarianceMaskPreprocessor and VarianceMaskPreprocessor.
+        This cleans the output on the first processer allowing the second one to process tilted images.
+
+        Args:
+        
+            image: Sample image to preprocess
+            channel: Channel we are scanning
+            thr_global: Threshold of minimum variance to be considered as possitive sample.
+            kernel_size: Size of the sliding window we are using in order to compute local histograms
+
+
+        Returns:
+            Dict: {
+                "ouput": Processed image cropped with mask
+                "mask": mask obtained with method 
+            }
+        
+        '''
+
+        res_global = VarianceMaskPreprocessor().run(image, channel, metric, thr_global, fill_holes)
+        res_local = LocalVarianceMaskPreprocessor().run(image, channel, kernel_size, thr_local)
+        mask = res_global * res_local
+
+
+
+        return {"result": image[mask], "mask": mask}
 
     
