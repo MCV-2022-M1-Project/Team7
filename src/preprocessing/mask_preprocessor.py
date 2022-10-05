@@ -26,14 +26,9 @@ def tohsv(img):
 @Registry.register_preprocessing
 class VarianceMaskPreprocessor(Preprocessing):
     name: str = "variance_mask_preprocessor"
-<<<<<<< HEAD
-    def __init__(self, channel: int = 0, metric: Callable = sd, thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
-        super(VarianceMaskPreprocessor).__init__()
-=======
 
     def __init__(self, channel: int = 0, metric: Callable = sd, thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
         super().__init__()
->>>>>>> 38672d60d8f4c529ff82e53015520877dbe16193
         self.channel = channel
         self.metric = metric
         self.thr_global = thr_global
