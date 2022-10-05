@@ -53,7 +53,7 @@ def write_report(metrics: List[MetricWrapper], path: str, task_config: Any):
         content += f"Features extractor: {task_config.features_extractor.name}\n"
 
     content += f"Preprocessing methods: {', '.join(pp for pp in task_config.preprocessing)}\n"
-
+    content += f"\n--- Metrics ---\n"
     for metric in metrics:
         content += f"{metric.metric.name}: {metric.average}\n"
 

@@ -2,14 +2,15 @@ task:
   name: masking
   output_dir: "./output"
 
-  features_extractor: 
-    name: histogram
-
   metrics:
     - name: mae
+    # - name: avg_mae
+    # - name: precision
+    # - name: recall
+    # - name: f1
 
   preprocessing:
     - variance_mask_preprocessor
   
 datasets:
-  - dev
+  - qsd2_w1
