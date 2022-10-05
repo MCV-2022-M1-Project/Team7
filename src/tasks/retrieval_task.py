@@ -18,8 +18,8 @@ class RetrievalTask(BaseTask):
     """
     name: str = "retrieval"
 
-    def __init__(self, dataset: Dataset, config: Any, **kwargs) -> None:
-        super().__init__(dataset, config, **kwargs)
+    def __init__(self, retrieval_dataset: Dataset, query_dataset: Dataset, config: Any, **kwargs) -> None:
+        super().__init__(retrieval_dataset, query_dataset, config, **kwargs)
         self.preprocessing = Registry.get_selected_preprocessing_instances()
         self.metrics = Registry.get_selected_metric_instances()
         self.metrics = wrap_metric_classes(self.metrics)

@@ -36,24 +36,28 @@ class Registry:
         cls._registry[name] = config
 
     @classmethod
-    def register_preprocessing(cls, cl) -> None:
+    def register_preprocessing(cls, cl) -> Type[Preprocessing]:
         cls._preprocessing[cl.name] = cl
+        return cl
 
     @classmethod
-    def register_features_extractor(cls, cl) -> None:
+    def register_features_extractor(cls, cl) -> Type[FeaturesExtractor]:
         cls._features_extractors[cl.name] = cl
+        return cl
 
     @classmethod
     def register_dataset(cls, name: str, dataset: Dataset) -> None:
         cls._datasets[name] = dataset
 
     @classmethod
-    def register_metric(cls, cl) -> None:
+    def register_metric(cls, cl) -> Type[Metric]:
         cls._metrics[cl.name] = cl
+        return cl
 
     @classmethod
-    def register_task(cls, cl) -> None:
+    def register_task(cls, cl) -> Type[BaseTask]:
         cls._tasks[cl.name] = cl
+        return cl
 
     @classmethod
     def get(cls, name: str) -> Any:
@@ -103,7 +107,7 @@ class Registry:
     @classmethod
     def get_selected_preprocessing_instances(cls) -> List[Preprocessing]:
         return [
-            cls.get_preprocessing_class(name)() for name in Registry.get("task").preprocessing
+            cls.get_preprocessing_class(kwargs["name"])(**kwargs) for kwargs in Registry.get("task").preprocessing
         ]
 
     @classmethod

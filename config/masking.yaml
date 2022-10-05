@@ -10,7 +10,8 @@ task:
     # - name: f1
 
   preprocessing:
-    - variance_mask_preprocessor
-  
+    - name: combined_mask_preprocessor
+      channel: 1
+
 datasets:
   - qsd2_w1

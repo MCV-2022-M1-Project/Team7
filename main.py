@@ -12,6 +12,8 @@ def __parse_args() -> argparse.Namespace:
         description='Steganography trainer parser')
     parser.add_argument('--datasets_dir', type=str, default='./datasets',
                         help='location of the dataset')
+    parser.add_argument('--retrieval_ds_dir', type=str, default='./datasets/museum',
+                        help='location of the dataset')
     parser.add_argument('--config', type=str, default='./config/masking.yaml',
                         help='location of the configuration file')
     parser.add_argument('--batch_size', type=int, default=1,
@@ -27,19 +29,20 @@ def main(args: argparse.Namespace):
     
     logging.info("Loading datasets.")
 
-    # retrieval_dataset = Dataset(os.path.join(args.datasets_dir, ds), name="retrieval")
+    retrieval_dataset = Dataset(args.retrieval_ds_dir, name="retrieval")
+    logging.info("Retrieval dataset loaded.")
 
     for ds in config.datasets:
-        dataset = Dataset(os.path.join(args.datasets_dir, ds), name=ds)
+        query_dataset = Dataset(os.path.join(args.datasets_dir, ds), name=ds)
         logging.info(f"Registering dataset: {ds}.")
-        Registry.register_dataset(ds, dataset)
+        Registry.register_dataset(ds, query_dataset)
 
     Registry.register("task", config.task)
     task_class = Registry.get_selected_task_class()
 
-    for name, dataset in Registry.get_datasets().items():
+    for name, query_dataset in Registry.get_datasets().items():
         logging.info(f"Running task {config.task.name} in dataset {name}.")
-        task = task_class(dataset, config.task)
+        task = task_class(retrieval_dataset, query_dataset, config.task)
         task.run()
 
 

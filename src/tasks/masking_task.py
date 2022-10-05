@@ -18,8 +18,8 @@ class MaskingTask(BaseTask):
     """
     name: str = "masking"
 
-    def __init__(self, dataset: Dataset, config: Any, **kwargs) -> None:
-        super().__init__(dataset, config, **kwargs)
+    def __init__(self, retrieval_dataset: Dataset, query_dataset: Dataset, config: Any, **kwargs) -> None:
+        super().__init__(retrieval_dataset, query_dataset, config, **kwargs)
         self.preprocessing = Registry.get_selected_preprocessing_instances()
         self.metrics = Registry.get_selected_metric_instances()
         self.metrics = wrap_metric_classes(self.metrics)
@@ -30,16 +30,16 @@ class MaskingTask(BaseTask):
         """
         output_dir = self.config.output_dir
         mask_output_dir = os.path.join(output_dir, "masks")
-        report_path = os.path.join(output_dir, f"report_ds-{self.dataset.name}.txt")
+        report_path = os.path.join(output_dir, f"report_ds-{self.query_dataset.name}.txt")
         os.makedirs(mask_output_dir, exist_ok=True)
 
-        for sample in tqdm(self.dataset, total=self.dataset.size()):
+        for sample in tqdm(self.query_dataset, total=self.query_dataset.size()):
             image = sample.image
             mask_gt = sample.mask
 
             for pp in self.preprocessing:
                 output = pp.run(image)
-                image = output["result"]
+                image = output["mask"]
 
             mask_pred = image
 

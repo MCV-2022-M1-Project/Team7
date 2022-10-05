@@ -10,9 +10,10 @@ class BaseTask(ABC):
     """
     name: str
 
-    def __init__(self, dataset: Dataset, config: Any, **kwargs) -> None:
+    def __init__(self, retrieval_dataset: Dataset, query_dataset: Dataset, config: Any, **kwargs) -> None:
         self.config = config
-        self.dataset = dataset
+        self.retrieval_dataset = retrieval_dataset
+        self.query_dataset = query_dataset
         # self.preprocessing = preprocessing
         # self.metrics = [
         #     Registry.get_metric(name)() for name, distance in Registry.get("task").metrics
