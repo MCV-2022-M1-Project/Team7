@@ -13,5 +13,5 @@ class Metric(Protocol):
 class GraphMetric(Protocol):
     name: str
     
-    def compute(self, ground_truth: Any, predictions: Any, **kwargs) -> List[Any]:
+    def compute(self, ground_truth: Any, predictions: Any, **kwargs) -> None:
         pass
