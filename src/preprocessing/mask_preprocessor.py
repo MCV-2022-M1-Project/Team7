@@ -50,11 +50,6 @@ class VarianceMaskPreprocessor(Preprocessing):
                 "ouput": Processed image cropped with mask
                 "mask": mask obtained with method 
             }
-
-
-
-
-        
         
         '''
 
@@ -84,6 +79,56 @@ class VarianceMaskPreprocessor(Preprocessing):
             result = self.fill(result) # If fill-holes is set to true, fill the image holes.
 
         return {"result": image[result!=0], "mask": result!=0}
+
+
+
+@Registry.register_preprocessing
+class LocalVarianceMaskPreprocessor(Preprocessing):
+    name: str = "local_variance_mask_preprocessor"
+
+
+    def run(self, image: np.ndarray, channel: int = 0, kernel_size: int = 5, thr_global: float = 5) -> Dict[str, np.ndarray]:
+
+        '''
+
+        run(**kwargs) takes an image as an imput and process standard deviation of each row and column.
+        Thresholds and operate boolean and for masking.
+
+        Some asumptions made here: 
+            1. Background is the least entropic region (lower variance) of the image. In other words: Walls are more boring than paintings.
+            2. Low-entropy in background produces "spike" on histogram, which is characterized by lower variance.
+
+        Args:
+        
+            image: Sample image to preprocess
+            channel: Channel we are scanning
+            thr_global: Threshold of minimum variance to be considered as possitive sample.
+            kernel_size: Size of the sliding window we are using in order to compute local histograms
+
+
+        Returns:
+            Dict: {
+                "ouput": Processed image cropped with mask
+                "mask": mask obtained with method 
+            }
+        
+        '''
+
+        #TODO: Precondition: Channel first or channel last?
+        sample_image = image[:, :, channel]
+        shape = sample_image.shape
+        mask = np.zeros_like(sample_image)
+        
+        for step_i in range(0, shape[0], kernel_size):
+            for step_j in range(0, shape[1], kernel_size):
+                
+                patch = sample_image[step_i:step_i+kernel_size, step_j:step_j+kernel_size]
+                mask[step_i:step_i+kernel_size, step_j:step_j+kernel_size] = patch.std()
+
+        mask = mask > thr_global
+
+
+        return {"result": image[mask], "mask": mask}
 
 
 
