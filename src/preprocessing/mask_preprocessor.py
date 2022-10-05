@@ -26,7 +26,7 @@ class VarianceMaskPreprocessor(Preprocessing):
 
 
 
-    def run(self, image: np.ndarray, channel: int = 0, metric: Callable = sd, thr_global: float = 20, fill_holes: bool = True) -> Dict[str, np.ndarray]:
+    def run(self, image: np.ndarray, channel: int = 0, metric: Callable = sd, thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> Dict[str, np.ndarray]:
 
         '''
 
@@ -92,7 +92,7 @@ class LocalVarianceMaskPreprocessor(Preprocessing):
     name: str = "local_variance_mask_preprocessor"
 
 
-    def run(self, image: np.ndarray, channel: int = 0, kernel_size: int = 5, thr_global: float = 5) -> Dict[str, np.ndarray]:
+    def run(self, image: np.ndarray, channel: int = 0, kernel_size: int = 5, thr_global: float = 5,  **kwargs) -> Dict[str, np.ndarray]:
 
         '''
 
@@ -142,7 +142,7 @@ class CombinedMaskPreprocessor(Preprocessing):
     name: str = "combined_mask_preprocessor"
 
 
-    def run(self, image: np.ndarray, channel: int = 0, kernel_size: int = 5, thr_global: float = 20, thr_local: float = 5, fill_holes: bool = True, metric: Callable = sd) -> Dict[str, np.ndarray]:
+    def run(self, image: np.ndarray, channel: int = 0, kernel_size: int = 5, thr_global: float = 20, thr_local: float = 5, fill_holes: bool = True, metric: Callable = sd,  **kwargs) -> Dict[str, np.ndarray]:
 
         '''
 
