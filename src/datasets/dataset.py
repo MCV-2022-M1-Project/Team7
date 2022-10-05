@@ -30,7 +30,7 @@ class Dataset:
         self.correspondances: List[List[int]] = []
 
         for path in mask_paths:
-            mask = cv2.imread(path)
+            mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
             self.masks.append(mask)
 
         for path in image_paths:
