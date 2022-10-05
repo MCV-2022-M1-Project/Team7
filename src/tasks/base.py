@@ -1,9 +1,7 @@
 from abc import ABC
+from typing import Any
 
-from src.common.registry import Registry
 from src.datasets.dataset import Dataset
-from src.extractors.base import FeaturesExtractor
-from src.preprocessing.base import Preprocessing
 
 
 class BaseTask(ABC):
@@ -12,7 +10,8 @@ class BaseTask(ABC):
     """
     name: str
 
-    def __init__(self, dataset: Dataset, **kwargs) -> None:
+    def __init__(self, dataset: Dataset, config: Any, **kwargs) -> None:
+        self.config = config
         self.dataset = dataset
         # self.preprocessing = preprocessing
         # self.metrics = [

@@ -1,43 +1,40 @@
-from abc import ABC
 import logging
+import os
+import cv2
+from typing import Any
+from tqdm import tqdm
+
 
 from src.common.registry import Registry
-from src.common.utils import wrap_metric_classes
+from src.common.utils import wrap_metric_classes, write_report
 from src.datasets.dataset import Dataset
-from src.extractors.base import FeaturesExtractor
-from src.preprocessing.base import Preprocessing
 from src.tasks.base import BaseTask
 
 
+@Registry.register_task
 class MaskingTask(BaseTask):
     """
     Base task runner.
     """
     name: str = "masking"
 
-    def __init__(self, dataset: Dataset) -> None:
-        self.dataset = dataset
+    def __init__(self, dataset: Dataset, config: Any, **kwargs) -> None:
+        super().__init__(dataset, config, **kwargs)
         self.preprocessing = Registry.get_selected_preprocessing_instances()
         self.metrics = Registry.get_selected_metric_instances()
         self.metrics = wrap_metric_classes(self.metrics)
 
     def run(self) -> None:
         """
-        Something like this:
-        for sample in self.dataset:
-            image = sample.image
 
-            for pp in self.preprocessing:
-                image = pp.preprocess(image)
-
-            features = self.extractor.run(image)
-            # KNN stuff
-            # Compute metrics and store in instance variables
-            # so you can access them calling the object, i.e.
-            # for metric in task.get_metrics():
-            #   print(metric["name"], ":", metric["value"])
         """
-        for sample in self.dataset:
+        logging.info(f"Running task {self.config.name}.")
+        output_dir = self.config.output_dir
+        mask_output_dir = os.path.join(output_dir, "masks")
+        report_path = os.path.join(output_dir, f"report_ds-{self.dataset.name}.txt")
+        os.makedirs(mask_output_dir, exist_ok=True)
+
+        for sample in tqdm(self.dataset, total=self.dataset.size()):
             image = sample.image
             mask_gt = sample.mask
 
@@ -50,11 +47,10 @@ class MaskingTask(BaseTask):
             for metric in self.metrics:
                 metric.compute(mask_gt, mask_pred)
 
+            cv2.imwrite(os.path.join(mask_output_dir, f"{sample.id}_mask.jpg"), mask_pred)
+
+        logging.info(f"Printing report and saving to disk.")
         for metric in self.metrics:
             logging.info(f"{metric.metric.name}: {metric.average}")
 
-            # KNN stuff
-            # Compute metrics and store in instance variables
-            # so you can access them calling the object, i.e.
-            # for metric in task.get_metrics():
-            #   print(metric["name"], ":", metric["value"])
+        write_report(self.metrics, report_path, self.config)

@@ -1,5 +1,6 @@
 task:
   name: masking
+  output_dir: "./output"
 
   features_extractor: 
     name: histogram

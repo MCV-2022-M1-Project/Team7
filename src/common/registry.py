@@ -4,6 +4,7 @@ from src.preprocessing.base import Preprocessing
 from src.datasets.dataset import Dataset
 from src.extractors.base import FeaturesExtractor
 from src.metrics.base import Metric
+from src.tasks.base import BaseTask
 
 
 class Registry:
@@ -28,6 +29,7 @@ class Registry:
     _features_extractors: Dict[str, Type[FeaturesExtractor]] = {}
     _datasets: Dict[str, Dataset] = {}
     _metrics: Dict[str, Type[Metric]] = {}
+    _tasks: Dict[str, Type[BaseTask]] = {}
 
     @classmethod
     def register(cls, name: str, config: Any) -> None:
@@ -48,6 +50,10 @@ class Registry:
     @classmethod
     def register_metric(cls, cl) -> None:
         cls._metrics[cl.name] = cl
+
+    @classmethod
+    def register_task(cls, cl) -> None:
+        cls._tasks[cl.name] = cl
 
     @classmethod
     def get(cls, name: str) -> Any:
@@ -82,6 +88,15 @@ class Registry:
         return cls._metrics[name]
 
     @classmethod
+    def get_selected_task_class(cls) -> Type[BaseTask]:
+        name = Registry.get("task").name
+
+        if name not in cls._tasks:
+            raise Exception(f"Task '{name}' not registered. Available options are: {', '.join(cls._tasks)}")
+
+        return cls._tasks[name]
+
+    @classmethod
     def get_selected_features_extractor_instance(cls) -> FeaturesExtractor:
         return cls.get_features_extractor_class(Registry.get("task").features_extractor.name)() 
 
@@ -96,3 +111,8 @@ class Registry:
         return [
             cls.get_metric_class(m["name"])() for m in Registry.get("task").metrics
         ]
+
+    @classmethod
+    def get_datasets(cls) -> Dict[str, Dataset]:
+        return cls._datasets
+

@@ -8,3 +8,4 @@ opencv-contrib-python
 pytesseract
 pyyaml
 matplotlib
+tqdm

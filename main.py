@@ -5,7 +5,6 @@ import logging
 from src.common.configuration import load_configuration
 from src.common.registry import Registry
 from src.datasets.dataset import Dataset
-from src.tasks.masking_task import MaskingTask
 
 
 def __parse_args() -> argparse.Namespace:
@@ -13,7 +12,7 @@ def __parse_args() -> argparse.Namespace:
         description='Steganography trainer parser')
     parser.add_argument('--datasets_dir', type=str, default='./datasets',
                         help='location of the dataset')
-    parser.add_argument('--config', type=str, default='./config/task1.yaml',
+    parser.add_argument('--config', type=str, default='./config/masking.yaml',
                         help='location of the configuration file')
     parser.add_argument('--batch_size', type=int, default=1,
                         help='training batch size')
@@ -29,13 +28,16 @@ def main(args: argparse.Namespace):
     logging.info("Loading datasets.")
 
     for ds in config.datasets:
-        dataset = Dataset(os.path.join(args.datasets_dir, ds))
-        logging.info(f"Registering dataset: {ds}")
+        dataset = Dataset(os.path.join(args.datasets_dir, ds), name=ds)
+        logging.info(f"Registering dataset: {ds}.")
         Registry.register_dataset(ds, dataset)
 
     Registry.register("task", config.task)
-    task = MaskingTask(dataset)
-    task.run()
+    task_class = Registry.get_selected_task_class()
+
+    for name, dataset in Registry.get_datasets().items():
+        task = task_class(dataset, config.task)
+        task.run()
 
 
 if __name__ == "__main__":
