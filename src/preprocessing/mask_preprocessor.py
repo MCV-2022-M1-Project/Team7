@@ -28,7 +28,6 @@ class VarianceMaskPreprocessor(Preprocessing):
     name: str = "variance_mask_preprocessor"
 
     def __init__(self, channel: int = 0, metric: Callable = sd, thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
-        super(VarianceMaskPreprocessor).__init__()
         self.channel = channel
         self.metric = metric
         self.thr_global = thr_global
@@ -102,7 +101,6 @@ class LocalVarianceMaskPreprocessor(Preprocessing):
     name: str = "local_variance_mask_preprocessor"
 
     def __init__(self,  channel: int = 0, kernel_size: int = 5, thr_global: float = 5,  **kwargs) -> None:
-        super().__init__()
         self.channel = channel
         self.kernel_size = kernel_size
         self.thr_global = thr_global
@@ -158,7 +156,6 @@ class CombinedMaskPreprocessor(Preprocessing):
     name: str = "combined_mask_preprocessor"
 
     def __init__(self, channel: int = 0, kernel_size: int = 5, thr_global: float = 20, thr_local: float = 5, fill_holes: bool = True, metric: Callable = sd, **kwarg) -> None:
-        super().__init__()
         self.channel = channel
         self.kernel_size = kernel_size
         self.thr_global = thr_global
