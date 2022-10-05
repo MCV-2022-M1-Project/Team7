@@ -7,7 +7,7 @@ from src.common.registry import Registry
 
 def sd(sample: np.ndarray)->np.float32: return sample.std()
 
-def fill(img: np.ndarray, kernel: tuple = (10, 10)) -> np.ndarray:
+def fill(img: np.ndarray, kernel: tuple = (10, 10), iterations = 1) -> np.ndarray:
 
     '''
     Performs filling operation by cv2 openning.
@@ -15,7 +15,7 @@ def fill(img: np.ndarray, kernel: tuple = (10, 10)) -> np.ndarray:
     '''
 
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernel)
-    return ~cv2.morphologyEx(~img,cv2.MORPH_OPEN,kernel) 
+    return ~cv2.morphologyEx(~img,cv2.MORPH_OPEN,kernel, iterations=iterations) 
 
 @Registry.register_preprocessing
 class VarianceMaskPreprocessor(Preprocessing):
@@ -163,7 +163,7 @@ class CombinedMaskPreprocessor(Preprocessing):
         res_global = VarianceMaskPreprocessor().run(image, channel, metric, thr_global, fill_holes)
         res_local = LocalVarianceMaskPreprocessor().run(image, channel, kernel_size, thr_local)
         mask = (255 * res_global * res_local).astype(np.uint8)
-        if fill_holes: fill(mask)
+        if fill_holes: fill(mask, iterations=10)
         mask *= 1
 
 
