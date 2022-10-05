@@ -1,7 +1,9 @@
+from __future__ import annotations
 import os
 import numpy as np
 import cv2
-from typing import List, Tuple
+import pickle
+from typing import List, Optional, Tuple
 from glob import glob
 
 from dataclasses import dataclass
@@ -12,21 +14,23 @@ class Sample:
     id: int
     mask: np.ndarray
     image: np.ndarray
-    annotation: Tuple[str, str]
+    annotation: Optional[Tuple[str, str]]
+    correspondance: Optional[List[int]]
 
 
 class Dataset:
     def __init__(self, path: str, name: str = "default") -> None:
-        mask_paths = glob(os.path.join(path, "*.png"))
-        image_paths = glob(os.path.join(path, "*.jpg"))
-        ann_paths = glob(os.path.join(path, "*.txt"))
         self.name = name
+        mask_paths = sorted(glob(os.path.join(path, "*.png")))
+        image_paths = sorted(glob(os.path.join(path, "*.jpg")))
+        ann_paths = sorted(glob(os.path.join(path, "*.txt")))
         self.masks: List[np.ndarray] = []
         self.images: List[np.ndarray] = []
         self.annotations: List[Tuple[str, str]] = []
+        self.correspondances: List[List[int]] = []
 
         for path in mask_paths:
-            mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+            mask = cv2.imread(path)
             self.masks.append(mask)
 
         for path in image_paths:
@@ -39,6 +43,13 @@ class Dataset:
 
             self.annotations.append(tuple(ann))
 
+        corresps_path = os.path.join(path, "gt_corresps.pkl")
+
+        if os.path.exists(corresps_path):
+            with open(corresps_path, "rb") as f:
+                corresps = pickle.load(f)
+                assert type(corresps) is list
+
     def size(self) -> int:
         return len(self.images)
 
@@ -49,9 +60,20 @@ class Dataset:
         return (self.__getitem__(id) for id in range(self.size()))
 
     def __getitem__(self, id: int) -> Sample:
+        if len(self.annotations) > 0:
+            annotation = self.annotations[id]
+        else:
+            annotation = None
+
+        if len(self.correspondances) > 0:
+            corresp = self.correspondances[id]
+        else:
+            corresp = None
+
         return Sample(
             id,
             self.masks[id],
             self.images[id],
-            self.annotations[id]
+            annotation,
+            corresp,
         )

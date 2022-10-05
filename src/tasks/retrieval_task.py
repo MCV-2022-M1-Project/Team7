@@ -12,11 +12,11 @@ from src.tasks.base import BaseTask
 
 
 @Registry.register_task
-class MaskingTask(BaseTask):
+class RetrievalTask(BaseTask):
     """
-    Masking task runner.
+    Base task runner.
     """
-    name: str = "masking"
+    name: str = "retrieval"
 
     def __init__(self, dataset: Dataset, config: Any, **kwargs) -> None:
         super().__init__(dataset, config, **kwargs)
@@ -41,7 +41,7 @@ class MaskingTask(BaseTask):
                 output = pp.run(image)
                 image = output["result"]
 
-            mask_pred = image
+
 
             for metric in self.metrics:
                 metric.compute(mask_gt, mask_pred)

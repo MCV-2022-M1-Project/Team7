@@ -27,6 +27,8 @@ def main(args: argparse.Namespace):
     
     logging.info("Loading datasets.")
 
+    # retrieval_dataset = Dataset(os.path.join(args.datasets_dir, ds), name="retrieval")
+
     for ds in config.datasets:
         dataset = Dataset(os.path.join(args.datasets_dir, ds), name=ds)
         logging.info(f"Registering dataset: {ds}.")
@@ -36,6 +38,7 @@ def main(args: argparse.Namespace):
     task_class = Registry.get_selected_task_class()
 
     for name, dataset in Registry.get_datasets().items():
+        logging.info(f"Running task {config.task.name} in dataset {name}.")
         task = task_class(dataset, config.task)
         task.run()
 

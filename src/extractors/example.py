@@ -13,6 +13,6 @@ class ExampleExtractor(FeaturesExtractor):
     def run(self, image: np.ndarray) -> Dict[str, np.ndarray]:
         #do stuff
         return {
-            "output": np.array([1,2,3,4]),
+            "result": np.array([1,2,3,4]),
             # Extra results if needed...
         }
