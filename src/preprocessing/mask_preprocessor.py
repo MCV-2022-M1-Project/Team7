@@ -7,20 +7,21 @@ from src.common.registry import Registry
 
 def sd(sample: np.ndarray)->np.float32: return sample.std()
 
+def fill(img: np.ndarray, kernel: tuple = (10, 10)) -> np.ndarray:
+
+    '''
+    Performs filling operation by cv2 openning.
+    
+    '''
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernel)
+    return ~cv2.morphologyEx(~img,cv2.MORPH_OPEN,kernel) 
 
 @Registry.register_preprocessing
 class VarianceMaskPreprocessor(Preprocessing):
     name: str = "variance_mask_preprocessor"
 
-    def fill(self, img: np.ndarray, kernel: tuple = (10, 10)) -> np.ndarray:
 
-        '''
-        Performs filling operation by cv2 openning.
-        
-        '''
-
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernel)
-        return ~cv2.morphologyEx(~img,cv2.MORPH_OPEN,kernel) 
 
     def run(self, image: np.ndarray, channel: int = 0, metric: Callable = sd, thr_global: float = 20, fill_holes: bool = True) -> Dict[str, np.ndarray]:
 
@@ -75,8 +76,8 @@ class VarianceMaskPreprocessor(Preprocessing):
             
         result = (255 * ((vertical_mask > thr_global) * (horizontal_mask > thr_global))).astype(np.uint8) # Perform thresholding to minimum variance required and type to cv2 needs.
         # Perform AND operation in order to calculate intersection of background columns and rows. 
-        if fill_holes:
-            result = self.fill(result) # If fill-holes is set to true, fill the image holes.
+        if fill_holes: result = fill(result) # If fill-holes is set to true, fill the image holes.
+        result *= 1
 
         return {"result": image[result!=0], "mask": result!=0}
 
@@ -161,10 +162,12 @@ class CombinedMaskPreprocessor(Preprocessing):
 
         res_global = VarianceMaskPreprocessor().run(image, channel, metric, thr_global, fill_holes)
         res_local = LocalVarianceMaskPreprocessor().run(image, channel, kernel_size, thr_local)
-        mask = res_global * res_local
+        mask = (255 * res_global * res_local).astype(np.uint8)
+        if fill_holes: fill(mask)
+        mask *= 1
 
 
 
-        return {"result": image[mask], "mask": mask}
+        return {"result": image[mask!=0], "mask": mask!=0}
 
     
