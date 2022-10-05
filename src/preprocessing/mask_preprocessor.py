@@ -23,10 +23,16 @@ def tohsv(img):
 @Registry.register_preprocessing
 class VarianceMaskPreprocessor(Preprocessing):
     name: str = "variance_mask_preprocessor"
+    def __init__(self, image: np.ndarray, channel: int = 0, metric: Callable = sd, thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
+        super(VarianceMaskPreprocessor).__init__()
+        self.channel = channel
+        self.metric = metric
+        self.thr_global = thr_global
+        self.fill_holes = fill_holes
 
 
 
-    def run(self, image: np.ndarray, channel: int = 0, metric: Callable = sd, thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> Dict[str, np.ndarray]:
+    def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
 
         '''
 
@@ -59,7 +65,7 @@ class VarianceMaskPreprocessor(Preprocessing):
 
         #TODO: Precondition: Channel first or channel last?
         image_hsv = tohsv(image)
-        sample_image = image_hsv[:, :, channel] # Select the channel we are working with from the parameter channel. 
+        sample_image = image_hsv[:, :, self.channel] # Select the channel we are working with from the parameter channel. 
         horizontal_mask = np.zeros_like(sample_image) # Create masks for scanning 
         vertical_mask = np.zeros_like(horizontal_mask)
         shape = image.shape 
@@ -69,18 +75,18 @@ class VarianceMaskPreprocessor(Preprocessing):
         for col in range(shape[0]):
 
             row_vector = sample_image[col, :] # Extract a particular column
-            vertical_mask[col, :] = metric(row_vector) # Set the mask to its metric level
+            vertical_mask[col, :] =  self.metric(row_vector) # Set the mask to its metric level
             
             
             
         ### Horizontal scan ###   
         for row in range(shape[1]):
             row_vector = sample_image[:, row]
-            horizontal_mask[:, row] = metric(row_vector)
+            horizontal_mask[:, row] =  self.metric(row_vector)
             
-        result = (255 * ((vertical_mask > thr_global) * (horizontal_mask > thr_global))).astype(np.uint8) # Perform thresholding to minimum variance required and type to cv2 needs.
+        result = (255 * ((vertical_mask >  self.thr_global) * (horizontal_mask >  self.thr_global))).astype(np.uint8) # Perform thresholding to minimum variance required and type to cv2 needs.
         # Perform AND operation in order to calculate intersection of background columns and rows. 
-        if fill_holes: result = fill(result) # If fill-holes is set to true, fill the image holes.
+        if  self.fill_holes: result = fill(result) # If fill-holes is set to true, fill the image holes.
         result *= 1
 
         return {"result": image[result!=0], "mask": result!=0}
@@ -91,8 +97,14 @@ class VarianceMaskPreprocessor(Preprocessing):
 class LocalVarianceMaskPreprocessor(Preprocessing):
     name: str = "local_variance_mask_preprocessor"
 
+    def __init__(self,  channel: int = 0, kernel_size: int = 5, thr_global: float = 5,  **kwargs) -> None:
+        super(LocalVarianceMaskPreprocessor).__init__()
+        self.channel = channel
+        self.kernel_size = kernel_size
+        self.thr_global = thr_global
 
-    def run(self, image: np.ndarray, channel: int = 0, kernel_size: int = 5, thr_global: float = 5,  **kwargs) -> Dict[str, np.ndarray]:
+
+    def run(self, image: np.ndarray,  **kwargs) -> Dict[str, np.ndarray]:
 
         '''
 
@@ -121,17 +133,17 @@ class LocalVarianceMaskPreprocessor(Preprocessing):
 
         #TODO: Precondition: Channel first or channel last? + Comments
         image_hsv = tohsv(image)
-        sample_image = image_hsv[:, :, channel] # Select the channel we are working with from the parameter channel. 
+        sample_image = image_hsv[:, :, self.channel] # Select the channel we are working with from the parameter channel. 
         mask = np.zeros_like(sample_image)
         shape = image.shape 
         
-        for step_i in range(0, shape[0], kernel_size):
-            for step_j in range(0, shape[1], kernel_size):
+        for step_i in range(0, shape[0], self.kernel_size):
+            for step_j in range(0, shape[1], self.kernel_size):
                 
-                patch = sample_image[step_i:step_i+kernel_size, step_j:step_j+kernel_size]
-                mask[step_i:step_i+kernel_size, step_j:step_j+kernel_size] = patch.std()
+                patch = sample_image[step_i:step_i+self.kernel_size, step_j:step_j+self.kernel_size]
+                mask[step_i:step_i+self.kernel_size, step_j:step_j+self.kernel_size] = patch.std()
 
-        mask = mask > thr_global
+        mask = mask > self.thr_global
 
 
         return {"result": image[mask], "mask": mask}
@@ -142,7 +154,16 @@ class CombinedMaskPreprocessor(Preprocessing):
     name: str = "combined_mask_preprocessor"
 
 
-    def run(self, image: np.ndarray, channel: int = 0, kernel_size: int = 5, thr_global: float = 20, thr_local: float = 5, fill_holes: bool = True, metric: Callable = sd,  **kwargs) -> Dict[str, np.ndarray]:
+    def __init__(self, channel: int = 0, kernel_size: int = 5, thr_global: float = 20, thr_local: float = 5, fill_holes: bool = True, metric: Callable = sd, **kwarg) -> None:
+        super(CombinedMaskPreprocessor).__init__()
+        self.channel = channel
+        self.kernel_size = kernel_size
+        self.thr_global = thr_global
+        self.thr_local = thr_local
+        self.fill_holes = fill_holes
+        self.metric = metric
+
+    def run(self, image: np.ndarray, **kwargs) -> Dict[str, np.ndarray]:
 
         '''
 
@@ -165,8 +186,8 @@ class CombinedMaskPreprocessor(Preprocessing):
         
         '''
 
-        res_global = VarianceMaskPreprocessor().run(image, channel, metric, thr_global, fill_holes)
-        res_local = LocalVarianceMaskPreprocessor().run(image, channel, kernel_size, thr_local)
+        res_global = VarianceMaskPreprocessor(self.channel, self.metric, self.thr_global, self.fill_holes).run(image)
+        res_local = LocalVarianceMaskPreprocessor(self.channel, self.kernel_size, self.thr_local).run(image)
         mask = (255 * res_global * res_local).astype(np.uint8)
         if fill_holes: fill(mask, iterations=7)
         mask *= 1
