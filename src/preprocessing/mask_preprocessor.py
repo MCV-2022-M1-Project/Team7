@@ -17,6 +17,9 @@ def fill(img: np.ndarray, kernel: tuple = (10, 10), iterations = 1) -> np.ndarra
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernel)
     return ~cv2.morphologyEx(~img,cv2.MORPH_OPEN,kernel, iterations=iterations) 
 
+def tohsv(img):
+    return cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
 @Registry.register_preprocessing
 class VarianceMaskPreprocessor(Preprocessing):
     name: str = "variance_mask_preprocessor"
@@ -55,7 +58,8 @@ class VarianceMaskPreprocessor(Preprocessing):
         '''
 
         #TODO: Precondition: Channel first or channel last?
-        sample_image = image[:, :, channel] # Select the channel we are working with from the parameter channel. 
+        image_hsv = tohsv(image)
+        sample_image = image_hsv[:, :, channel] # Select the channel we are working with from the parameter channel. 
         horizontal_mask = np.zeros_like(sample_image) # Create masks for scanning 
         vertical_mask = np.zeros_like(horizontal_mask)
         shape = image.shape 
@@ -116,9 +120,10 @@ class LocalVarianceMaskPreprocessor(Preprocessing):
         '''
 
         #TODO: Precondition: Channel first or channel last? + Comments
-        sample_image = image[:, :, channel]
-        shape = sample_image.shape
+        image_hsv = tohsv(image)
+        sample_image = image_hsv[:, :, channel] # Select the channel we are working with from the parameter channel. 
         mask = np.zeros_like(sample_image)
+        shape = image.shape 
         
         for step_i in range(0, shape[0], kernel_size):
             for step_j in range(0, shape[1], kernel_size):
