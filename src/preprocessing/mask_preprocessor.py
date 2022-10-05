@@ -25,26 +25,35 @@ class VarianceMaskPreprocessor(Preprocessing):
     def run(self, image: np.ndarray, channel: int = 0, metric: function = sd, thr_global: float = 20, fill_holes: bool = True) -> Dict[str, np.ndarray]:
 
         '''
+
+        run(**kwargs) takes an image as an imput and process standard deviation of each row and column.
+        Thresholds and operate boolean and for masking.
+
+        Some asumptions made here: 
+            1. Background is on the sides of the image.
+            2. Painting is on the center of the image.
+            3. Background is the least entropic region (lower variance) of the image. In other words: Walls are more boring than paintings.
+            4. Low-entropy in background produces "spike" on histogram, which is characterized by lower variance.
+            5. Photo of the painting isn't tilted. Thus, we can scan it iteratively.
+
+        Args:
         
-        Image: Sample image to preprocess
-        Channel: Channel we are scanning
-        Metric: Metric used to calculate the least entropic channel, variance has more predictable behaviour.
-        thr_global: Threshold of minimum variance to be considered as possitive sample.
-        fill_holes: Boolean. Some cases, when painting is composed by sub-paintings it detects the sub-painting level. 
-                    We can solve this in order to adjust to the GT by filling the holes.
+            Image: Sample image to preprocess
+            Channel: Channel we are scanning
+            Metric: Metric used to calculate the least entropic channel, variance has more predictable behaviour.
+            thr_global: Threshold of minimum variance to be considered as possitive sample.
+            fill_holes: Boolean. Some cases, when painting is composed by sub-paintings it detects the sub-painting level. 
+                        We can solve this in order to adjust to the GT by filling the holes.
+
+        Returns:
+            Dict: {
+                "ouput": Processed image cropped with mask
+                "mask": mask obtained with method 
+            }
 
 
-        Description:
 
-            run(**kwargs) takes an image as an imput and process standard deviation of each row and column.
-            Thresholds and operate boolean and for masking.
 
-            Some asumptions made here: 
-                1. Background is on the sides of the image.
-                2. Painting is on the center of the image.
-                3. Background is the least entropic region (lower variance) of the image. In other words: Walls are more boring than paintings.
-                4. Low-entropy in background produces "spike" on histogram, which is characterized by lower variance.
-                5. Photo of the painting isn't tilted. Thus, we can scan it iteratively.
         
         
         '''
@@ -74,7 +83,7 @@ class VarianceMaskPreprocessor(Preprocessing):
         if fill_holes:
             result = self.fill(result) # If fill-holes is set to true, fill the image holes.
 
-        return result
+        return {"output": image[result!=0], "mask": result!=0}
 
 
 
