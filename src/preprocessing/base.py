@@ -6,5 +6,5 @@ from typing import Dict, Protocol
 class Preprocessing(Protocol):
     name: str
     
-    def preprocess(self, image: np.ndarray) -> Dict[str, np.ndarray]:
+    def run(self, image: np.ndarray, **kwargs) -> Dict[str, np.ndarray]:
         pass

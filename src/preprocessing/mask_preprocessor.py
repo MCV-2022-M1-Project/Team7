@@ -1,14 +1,14 @@
-from typing import Dict
-from src.preprocessing.base import Preprocessing
-from src.common.registry import Registry
-
 import cv2
 import numpy as np
+from typing import Callable, Dict
+
+from src.preprocessing.base import Preprocessing
+from src.common.registry import Registry
 
 def sd(sample: np.ndarray)->np.float32: return sample.std()
 
 
-@Registry.register_mask_preprocessor
+@Registry.register_preprocessing
 class VarianceMaskPreprocessor(Preprocessing):
     name: str = "variance_mask_preprocessor"
 
@@ -22,7 +22,7 @@ class VarianceMaskPreprocessor(Preprocessing):
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernel)
         return ~cv2.morphologyEx(~img,cv2.MORPH_OPEN,kernel) 
 
-    def run(self, image: np.ndarray, channel: int = 0, metric: function = sd, thr_global: float = 20, fill_holes: bool = True) -> Dict[str, np.ndarray]:
+    def run(self, image: np.ndarray, channel: int = 0, metric: Callable = sd, thr_global: float = 20, fill_holes: bool = True) -> Dict[str, np.ndarray]:
 
         '''
 
@@ -83,7 +83,7 @@ class VarianceMaskPreprocessor(Preprocessing):
         if fill_holes:
             result = self.fill(result) # If fill-holes is set to true, fill the image holes.
 
-        return {"output": image[result!=0], "mask": result!=0}
+        return {"result": image[result!=0], "mask": result!=0}
 
 
 

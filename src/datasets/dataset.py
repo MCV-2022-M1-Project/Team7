@@ -16,16 +16,17 @@ class Sample:
 
 
 class Dataset:
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, name: str = "default") -> None:
         mask_paths = glob(os.path.join(path, "*.png"))
         image_paths = glob(os.path.join(path, "*.jpg"))
         ann_paths = glob(os.path.join(path, "*.txt"))
+        self.name = name
         self.masks: List[np.ndarray] = []
         self.images: List[np.ndarray] = []
         self.annotations: List[Tuple[str, str]] = []
 
         for path in mask_paths:
-            mask = cv2.imread(path)
+            mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
             self.masks.append(mask)
 
         for path in image_paths:

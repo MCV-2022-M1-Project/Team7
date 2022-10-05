@@ -1,15 +1,15 @@
 task:
-  name: retrieval
+  name: masking
+  output_dir: "./output"
 
   features_extractor: 
     name: histogram
 
   metrics:
-    - name: map
-      distance: euclidean
+    - name: mae
 
   preprocessing:
-    - masking
+    - variance_mask_preprocessor
   
 datasets:
   - dev
