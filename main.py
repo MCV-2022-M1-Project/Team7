@@ -14,7 +14,7 @@ def __parse_args() -> argparse.Namespace:
                         help='location of the dataset')
     parser.add_argument('--retrieval_ds_dir', type=str, default='./datasets/museum',
                         help='location of the dataset')
-    parser.add_argument('--config', type=str, default='./config/masking.yaml',
+    parser.add_argument('--config', type=str, default='./config/retrieval.yaml',
                         help='location of the configuration file')
     parser.add_argument('--batch_size', type=int, default=1,
                         help='training batch size')
@@ -41,7 +41,7 @@ def main(args: argparse.Namespace):
     task_class = Registry.get_selected_task_class()
 
     for name, query_dataset in Registry.get_datasets().items():
-        logging.info(f"Running task {config.task.name} in dataset {name}.")
+        logging.info(f"Running task {config.task.name} on dataset {name}.")
         task = task_class(retrieval_dataset, query_dataset, config.task)
         task.run()
 

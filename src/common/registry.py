@@ -106,12 +106,18 @@ class Registry:
 
     @classmethod
     def get_selected_preprocessing_instances(cls) -> List[Preprocessing]:
+        if not Registry.get("task").preprocessing:
+            return []
+
         return [
             cls.get_preprocessing_class(kwargs["name"])(**kwargs) for kwargs in Registry.get("task").preprocessing
         ]
 
     @classmethod
     def get_selected_metric_instances(cls) -> List[Metric]:
+        if not Registry.get("task").metrics:
+            return []
+
         return [
             cls.get_metric_class(m["name"])() for m in Registry.get("task").metrics
         ]

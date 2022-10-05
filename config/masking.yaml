@@ -11,7 +11,7 @@ task:
 
   preprocessing:
     - name: combined_mask_preprocessor
-      channel: 1
+      channel: 0
 
 datasets:
   - qsd2_w1
