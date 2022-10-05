@@ -23,7 +23,7 @@ def tohsv(img):
 @Registry.register_preprocessing
 class VarianceMaskPreprocessor(Preprocessing):
     name: str = "variance_mask_preprocessor"
-    def __init__(self, image: np.ndarray, channel: int = 0, metric: Callable = sd, thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
+    def __init__(self, channel: int = 0, metric: Callable = sd, thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
         super(VarianceMaskPreprocessor).__init__()
         self.channel = channel
         self.metric = metric
