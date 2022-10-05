@@ -163,7 +163,7 @@ class CombinedMaskPreprocessor(Preprocessing):
         res_global = VarianceMaskPreprocessor().run(image, channel, metric, thr_global, fill_holes)
         res_local = LocalVarianceMaskPreprocessor().run(image, channel, kernel_size, thr_local)
         mask = (255 * res_global * res_local).astype(np.uint8)
-        if fill_holes: fill(mask, iterations=10)
+        if fill_holes: fill(mask, iterations=7)
         mask *= 1
 
 
