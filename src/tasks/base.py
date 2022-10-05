@@ -12,7 +12,7 @@ class BaseTask(ABC):
     """
     name: str
 
-    def __init__(self, dataset: Dataset) -> None:
+    def __init__(self, dataset: Dataset, **kwargs) -> None:
         self.dataset = dataset
         # self.preprocessing = preprocessing
         # self.metrics = [
