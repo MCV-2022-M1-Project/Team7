@@ -93,7 +93,7 @@ class VarianceMaskPreprocessor(Preprocessing):
             result = fill(result)
         result *= 1
 
-        return {"result": image[result != 0], "mask": result != 0}
+        return {"result": image[result != 0], "mask":  (result != 0).astype(np.uint8)}
 
 
 @Registry.register_preprocessing
@@ -148,7 +148,7 @@ class LocalVarianceMaskPreprocessor(Preprocessing):
 
         mask = mask > self.thr_global
 
-        return {"result": image[mask], "mask": mask}
+        return {"result": image[mask], "mask":  (mask != 0).astype(np.uint8)}
 
 
 @Registry.register_preprocessing
@@ -186,11 +186,11 @@ class CombinedMaskPreprocessor(Preprocessing):
         '''
 
         res_global = VarianceMaskPreprocessor(
-            self.channel, self.metric, self.thr_global, self.fill_holes).run(image)
+            self.channel, self.metric, self.thr_global, self.fill_holes).run(image)['mask']!=0
         res_local = LocalVarianceMaskPreprocessor(
-            self.channel, self.kernel_size, self.thr_local).run(image)
+            self.channel, self.kernel_size, self.thr_local).run(image)['mask']!=0
         mask = (255 * res_global * res_local).astype(np.uint8)
         if self.fill_holes:
             fill(mask, iterations=7)
         mask *= 1
-        return {"result": image[mask != 0], "mask": mask != 0}
+        return {"result": image[mask != 0], "mask": (mask != 0).astype(np.uint8)}
