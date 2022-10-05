@@ -28,7 +28,7 @@ class VarianceMaskPreprocessor(Preprocessing):
     name: str = "variance_mask_preprocessor"
 
     def __init__(self, channel: int = 0, metric: Callable = sd, thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
-        super().__init__()
+        super(VarianceMaskPreprocessor).__init__()
         self.channel = channel
         self.metric = metric
         self.thr_global = thr_global
