@@ -105,3 +105,26 @@ class VisualCodebookExtractor(FeaturesExtractor):
         return {
             "result": features,
         }
+
+@Registry.register_features_extractor
+class RandomFeaturesExtractor(FeaturesExtractor):
+    name: str = "random_features_extractor"
+
+    def run(self, images: List[np.ndarray],) -> Dict[str, np.ndarray]:
+        """
+        Gets a bunch of random list of numbers so we have a baseline on defininng where's the minimum of the function.
+        # TODO: Explain this better
+
+
+        Args:
+            images: The list of numpy arrays representing the images.
+
+        Returns:
+            A dictionary whose result key is the list of computed histograms.
+        """
+
+
+
+        return {
+            "result": np.random.rand(len(images), 10),
+        }
