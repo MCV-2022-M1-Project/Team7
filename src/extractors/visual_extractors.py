@@ -15,6 +15,8 @@ from src.extractors.base import FeaturesExtractor
 
 # Vsual codebook
 def get_codebooks(sample_hz: int = 255, max_exp: int = 25, norm_max: int = 1):
+
+    ### WHAT IF CODEBOOKS ARE RANDOM NOISE COMPOSITION OF SIGNALS????
     
     norm_signal = lambda x: norm_max * ((x - x.min())/(x.max() - x.min()))
     
