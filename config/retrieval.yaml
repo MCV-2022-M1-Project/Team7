@@ -3,7 +3,7 @@ task:
   output_dir: "./output"
 
   features_extractor: 
-    name: example_extractor
+    name: visual_codebook_extractor
     n_neighbors: 3
     top_k: 3
 

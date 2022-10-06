@@ -93,7 +93,6 @@ class VisualCodebookExtractor(FeaturesExtractor):
         codebook_hist_bins = np.zeros(len(self.codebook))
         for img in images:
             img = tohsv(img)
-
             local_codebook = codebook_hist_bins.copy()
             for i_step in range(0, img.shape[0], k_size):
                 for j_step in range(0, img.shape[1], k_size):
