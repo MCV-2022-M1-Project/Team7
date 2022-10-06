@@ -8,6 +8,7 @@ from src.common.registry import Registry
 from src.metrics.base import Metric, GraphMetric
 from src.common.utils import image_normalize, compute_pre_rec
 
+
 @Registry.register_metric
 class MAE(Metric):
     name: str = "mae"
@@ -25,12 +26,13 @@ class MAE(Metric):
         """
         mask1 = array(mask1)
         mask2 = array(mask2)
-
+        mask1 = image_normalize(mask1)
+        mask2 = image_normalize(mask2)
         h,w = mask1.shape[0],mask1.shape[1]
         mask1 = image_normalize(mask1)
         mask2 = image_normalize(mask2)
-        sumError = np.sum(np.absolute((mask1.astype(float) + mask2.astype(float))))
-        maeError = sumError/((float(h)*float(w)+1e-8)*1000)
+        sumError = np.sum(np.absolute((mask1.astype(float) - mask2.astype(float))))
+        maeError = sumError/((float(h)*float(w)+1e-8))
 
         return maeError
     
@@ -54,15 +56,12 @@ class Precision(Metric):
         mask2 = array(mask2)
         mask1 = image_normalize(mask1)
         mask2 = image_normalize(mask2)
-        true_values = mask1
-        predictions = mask2
+        #true_values = mask1
+        #predictions = mask2
         #print(true_values)
         #print(predictions)
-        N = true_values.shape[1]
-        accuracy = (true_values == predictions).sum() / N
-        TP = ((predictions == 0) & (true_values == 0)).sum()
-        FP = ((predictions == 0) & (true_values == 0)).sum()
-        precision = TP / (TP+FP)
+        #N = true_values.shape[1]
+        precision = (mask1==mask2).sum()/(mask2.sum()+1e-8)
         return precision
     
 @Registry.register_metric    
@@ -84,16 +83,8 @@ class Recall(Metric):
         mask2 = array(mask2)
         mask1 = image_normalize(mask1)
         mask2 = image_normalize(mask2)
-        true_values = mask1
-        predictions = mask2
-        #print(true_values)
-        #print(predictions)
-        N = true_values.shape[1]
-        accuracy = (true_values == predictions).sum() / N
-        TP = ((predictions == 1) & (true_values == 1)).sum()
-        FN = ((predictions == 0) & (true_values == 0)).sum()
-        recall = TP / (TP+FN)
-        return accuracy/1000
+        recall = (mask1==mask2).sum()/(mask1.sum()+1e-8)
+        return recall
 
 
 @Registry.register_metric    
@@ -116,14 +107,6 @@ class F1(Metric):
         mask2 = array(mask2)
         mask1 = image_normalize(mask1)
         mask2 = image_normalize(mask2)
-        true_values = mask1
-        predictions = mask2
-        #print(true_values)
-        #print(predictions)
-        N = true_values.shape[1]
-        accuracy = (true_values == predictions).sum() / N
-        accuracy = accuracy/1000
-        TP = ((predictions == 0) & (true_values == 0)).sum()
-        FP = ((predictions == 0) & (true_values == 0)).sum()
-        precision = TP / (TP+FP)
-        return 2*accuracy*precision/(accuracy+precision)
+        precision = (mask1==mask2).sum()/(mask2.sum()+1e-8)
+        recall = (mask1==mask2).sum()/(mask1.sum()+1e-8)
+        return 2*recall*precision/(recall+precision)
