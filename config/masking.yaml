@@ -9,7 +9,7 @@ task:
     - name: f1
 
   preprocessing:
-    - name: combined_mask_preprocessor
+    - name: variance_mask_preprocessor
       channel: 1
 
 datasets:

@@ -92,8 +92,12 @@ class VarianceMaskPreprocessor(Preprocessing):
             # If fill-holes is set to true, fill the image holes.
             result = fill(result)
         result *= 1
+        returned_image = image.copy()
+        for i in range(3):
 
-        return {"result": image[result != 0], "mask":  (result != 0).astype(np.uint8) * 255 }
+            returned_image[:, :, i][result] = 0
+
+        return {"result": returned_image, "mask":  (result != 0).astype(np.uint8) * 255 }
 
 
 @Registry.register_preprocessing
@@ -147,8 +151,11 @@ class LocalVarianceMaskPreprocessor(Preprocessing):
                      step_j:step_j+self.kernel_size] = patch.std()
 
         mask = mask > self.thr_global
+        returned_image = image.copy()
+        for i in range(3):
 
-        return {"result": image[mask], "mask":  (mask != 0).astype(np.uint8) * 255}
+            returned_image[:, :, i][mask] = 0
+        return {"result": returned_image, "mask":  (mask != 0).astype(np.uint8) * 255}
 
 
 @Registry.register_preprocessing
@@ -193,4 +200,8 @@ class CombinedMaskPreprocessor(Preprocessing):
         if self.fill_holes:
             fill(mask, iterations=7)
         mask *= 1
-        return {"result": image[mask != 0], "mask": (mask != 0).astype(np.uint8) * 255}
+        returned_image = image.copy()
+        for i in range(3):
+
+            returned_image[:, :, i][mask] = 0
+        return {"result": returned_image, "mask": (mask != 0).astype(np.uint8) * 255}
