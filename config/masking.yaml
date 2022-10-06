@@ -13,4 +13,4 @@ task:
       channel: 0
 
 datasets:
-  - museum
+  - qsd2_w1

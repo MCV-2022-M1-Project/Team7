@@ -93,7 +93,7 @@ class VarianceMaskPreprocessor(Preprocessing):
             result = fill(result)
         result *= 1
 
-        return {"result": image[result != 0], "mask":  (result != 0).astype(np.uint8) * 255}
+        return {"result": image[result != 0], "mask":  (result != 0).astype(np.uint8) * 255 }
 
 
 @Registry.register_preprocessing
