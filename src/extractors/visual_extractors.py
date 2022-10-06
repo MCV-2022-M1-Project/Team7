@@ -5,6 +5,8 @@ import numpy as np
 import scipy.stats as stats
 from typing import Dict, List
 from scipy import spatial
+from sklearn.metrics import euclidean_distances
+from sympy import euler
 
 from src.common.utils import image_normalize
 from src.common.registry import Registry
@@ -48,7 +50,7 @@ def get_codebooks(sample_hz: int = 255, max_exp: int = 25, norm_max: int = 1):
     
     
     ### Constant
-    y_constant = np.ones(255)
+    y_constant = np.ones(sample_hz)
     
     
     ### Normalize Distributions y: (0-1)
@@ -64,7 +66,7 @@ def tohsv(img):
 class VisualCodebookExtractor(FeaturesExtractor):
     name: str = "visual_codebook_extractor"
 
-    def run(self, images: List[np.ndarray], k_size: int = 25, threshold_as = 0.5, channel: int = 0) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], k_size: int = 500, sample = 100,threshold_as = 0, channel: int = 0) -> Dict[str, np.ndarray]:
         """
         Extractor that process the histogram of occurences of a certain visual word with respect a fixed codebook.
         The histogram of codebook appearences acts as feature for the image. Given a certain path, its codebook is the one with maximum cosine similarity.
@@ -79,10 +81,10 @@ class VisualCodebookExtractor(FeaturesExtractor):
             A dictionary whose result key is the list of computed histograms.
         """
 
-        self.codebook: List[np.array]= get_codebooks()
+        self.codebook: List[np.array]= get_codebooks(sample_hz = sample) # TODO: Create codebook from actual image features. Until then it won't work
 
 
-        cosine_similarity = lambda x, y: 1 - spatial.distance.cosine(x, y) # Cosine similarity is performed instead of euclidean.
+        cosine_similarity = lambda x, y: 1- spatial.distance.cosine(x, y) # Cosine similarity is performed instead of euclidean.
         # Cosine similarity is non-sensitive to scale; thus the codebook is valid independenly on the scale.
         features = []
         codebook_hist_bins = np.zeros(len(self.codebook))
@@ -91,11 +93,11 @@ class VisualCodebookExtractor(FeaturesExtractor):
             local_codebook = codebook_hist_bins.copy()
             for i_step in range(0, img.shape[0], k_size):
                 for j_step in range(0, img.shape[1], k_size):
-                    hist, _ = np.histogram(img[i_step:i_step+k_size, j_step:j_step+k_size, channel], 255)
+                    hist, _ = np.histogram(img[i_step:i_step+k_size, j_step:j_step+k_size, channel], sample)
+                    hist = hist / hist.max()
                     scores = [cosine_similarity(hist, x) for x in self.codebook]
                     max_score = np.argmax(scores)
                     if scores[max_score] >= threshold_as: local_codebook[max_score] += 1
-
             features += [local_codebook]
 
         return {
