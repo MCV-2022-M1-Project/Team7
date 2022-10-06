@@ -24,6 +24,9 @@ class Dataset:
         mask_paths = sorted(glob(os.path.join(path, "*.png")))
         image_paths = sorted(glob(os.path.join(path, "*.jpg")))
         ann_paths = sorted(glob(os.path.join(path, "*.txt")))
+
+        assert len(image_paths) > 0, f"No images were found on {path}."
+
         self.masks: List[np.ndarray] = []
         self.images: List[np.ndarray] = []
         self.annotations: List[Tuple[str, str]] = []

@@ -9,8 +9,8 @@ from src.extractors.base import FeaturesExtractor
 
 
 @Registry.register_features_extractor
-class ExampleExtractor(FeaturesExtractor):
-    name: str = "example_extractor"
+class GrayscaleExtractor(FeaturesExtractor):
+    name: str = "grayscale_extractor"
 
     def run(self, images: List[np.ndarray]) -> Dict[str, np.ndarray]:
         """
@@ -23,7 +23,7 @@ class ExampleExtractor(FeaturesExtractor):
         Returns:
             A dictionary whose result key is the list of computed histograms.
         """
-        histograms = [image_normalize(cv2.calcHist([np.mean(img, axis=-1).astype('uint8')], [0], None, [256], [0,256])).flatten() for img in images]
+        feats = [np.mean(cv2.resize(image, (128, 128)), -1).ravel() for image in images]
         return {
-            "result": histograms,
+            "result": feats,
         }
