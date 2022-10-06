@@ -38,12 +38,12 @@ def wrap_metric_classes(metrics_list: List[Metric]) -> List[MetricWrapper]:
 def image_normalize(img: np.ndarray) -> np.ndarray:
     """
     Args:
-        img: HxW
+        img: HxW [0, 255]
 
     Output: 
-        HxW [0,255]
-    """
-    return img/(np.amax(img)+1e-7)
+        HxW [0, 1]
+    """ 
+    return img / 255
 
 
 def binarize(img: np.ndarray) -> np.ndarray:
