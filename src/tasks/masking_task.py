@@ -30,7 +30,7 @@ class MaskingTask(BaseTask):
         """
         output_dir = self.config.output_dir
         mask_output_dir = os.path.join(output_dir, "masks")
-        report_path = os.path.join(output_dir, f"report_ds-{self.query_dataset.name}.txt")
+        report_path = os.path.join(output_dir, f"report_{self.name}_on_{self.query_dataset.name}.txt")
         os.makedirs(mask_output_dir, exist_ok=True)
 
         for sample in tqdm(self.query_dataset, total=self.query_dataset.size()):
@@ -44,7 +44,7 @@ class MaskingTask(BaseTask):
             mask_pred = image
 
             for metric in self.metrics:
-                metric.compute(mask_gt, mask_pred)
+                metric.compute([mask_gt], [mask_pred])
 
             cv2.imwrite(os.path.join(mask_output_dir, f"{sample.id}_mask.jpg"), mask_pred)
 

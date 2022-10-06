@@ -29,6 +29,13 @@ class Dataset:
         self.annotations: List[Tuple[str, str]] = []
         self.correspondances: List[List[int]] = []
 
+        corresps_path = os.path.join(path, "gt_corresps.pkl")
+
+        if os.path.exists(corresps_path):
+            with open(corresps_path, "rb") as f:
+                self.correspondances = pickle.load(f)
+                assert type(self.correspondances) is list
+
         for path in mask_paths:
             mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
             self.masks.append(mask)
@@ -43,13 +50,6 @@ class Dataset:
 
             self.annotations.append(tuple(ann))
 
-        corresps_path = os.path.join(path, "gt_corresps.pkl")
-
-        if os.path.exists(corresps_path):
-            with open(corresps_path, "rb") as f:
-                corresps = pickle.load(f)
-                assert type(corresps) is list
-
     def size(self) -> int:
         return len(self.images)
 
@@ -60,6 +60,11 @@ class Dataset:
         return (self.__getitem__(id) for id in range(self.size()))
 
     def __getitem__(self, id: int) -> Sample:
+        if len(self.masks) > 0:
+            mask = self.masks[id]
+        else:
+            mask = None
+
         if len(self.annotations) > 0:
             annotation = self.annotations[id]
         else:
@@ -72,7 +77,7 @@ class Dataset:
 
         return Sample(
             id,
-            self.masks[id],
+            mask,
             self.images[id],
             annotation,
             corresp,

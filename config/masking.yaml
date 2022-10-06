@@ -4,14 +4,13 @@ task:
 
   metrics:
     - name: mae
-    # - name: avg_mae
-    # - name: precision
-    # - name: recall
-    # - name: f1
+    - name: precision
+    - name: recall
+    - name: f1
 
   preprocessing:
     - name: combined_mask_preprocessor
-      channel: 1
+      channel: 0
 
 datasets:
   - museum
