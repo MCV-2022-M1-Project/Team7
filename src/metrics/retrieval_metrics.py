@@ -1,6 +1,4 @@
 import numpy as np
-
-
 from typing import List
 from src.common.registry import Registry
 from src.metrics.base import Metric
@@ -18,7 +16,55 @@ class RawAccuracyMetric(Metric):
                 val += 1.0
 
         return val / len(ground_truth)
+
+
+@Registry.register_metric
+class MAP(Metric):
+    name: str = "map"
     
+    def apk(self, ground_truth: List[int], predictions: List[int], k: int = 10) -> float:
+
+        """
+        Computes the average precision at k.
+        This function computes the average prescision at k between two lists of
+        items.
+
+        Taken from: https://github.com/benhamner/Metrics/blob/master/Python/ml_metrics/average_precision.py
+
+        Args:
+            actual : list
+                 A list of elements that are to be predicted (order doesn't matter)
+            predicted : list
+                A list of predicted elements (order does matter)
+            k : int, optional
+                The maximum number of predicted elements
+
+        Returns:
+            score : double
+            The average precision at k over the input lists
+        """
+        if not ground_truth:
+            return 0.0
+
+        if len(predictions) > k:
+            predictions = predictions[:k]
+
+        score = 0.0
+        num_hits = 0.0
+
+        for i,p in enumerate(predictions):
+            # first condition checks whether it is valid prediction
+            # second condition checks if prediction is not repeated
+            if p in ground_truth and p not in predictions[:i]:
+                num_hits += 1.0
+                score += num_hits / (i+1.0)
+
+        return score / min(len(ground_truth), 10)
+
+    def compute(self, ground_truth: List[List[int]], predictions: List[List[int]], k: int = 10) -> float:
+        return np.mean([self.apk(a,p,k) for a,p in zip(ground_truth, predictions)])
+    
+
 @Registry.register_metric
 class EuclDis(Metric):
     name: str = "euclidian_distance"
@@ -64,3 +110,4 @@ class HistIntSim(Metric):
             for i in range(5):
                 sm += min(ground_truth.all(), predictions.all())
             return sm
+
