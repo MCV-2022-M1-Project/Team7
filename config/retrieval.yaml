@@ -14,6 +14,7 @@ task:
       - name: chi2_distance
       - name: hellinger_kernel_distance
       - name: histogram_intersection_similarity
+      - name: map
   # preprocessing:
   #   - name: combined_mask_preprocessor
   #     channel: 0
