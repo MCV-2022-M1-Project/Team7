@@ -50,7 +50,7 @@ class RetrievalTask(BaseTask):
 
                 if "mask" in output:
                     mask_pred = output["mask"]
-                    # TODO: Apply mask to image
+                    image = (image * np.expand_dims(mask_pred / 255, axis=-1)).astype(np.uint8)
 
             feats_pred = self.extractor.run(np.array([image]))["result"]
             top_k_pred = neighbors.kneighbors(feats_pred, n_neighbors=self.config.features_extractor.top_k, return_distance=False)[0]

@@ -27,7 +27,7 @@ class MetricWrapper:
 
     def compute(self, ground_truth: Any, predictions: Any, batch_size: int = 1) -> float:
         result = self.metric.compute(ground_truth, predictions)
-        self.update(result)
+        self.update(result, batch_size)
         return result
 
 
@@ -38,12 +38,23 @@ def wrap_metric_classes(metrics_list: List[Metric]) -> List[MetricWrapper]:
 def image_normalize(img: np.ndarray) -> np.ndarray:
     """
     Args:
-        mask: HxW
+        img: HxW
 
     Output: 
         HxW [0,255]
     """
     return img/(np.amax(img)+1e-7)
+
+
+def binarize(img: np.ndarray) -> np.ndarray:
+    """
+    Args:
+        img: HxW
+
+    Output: 
+        HxW [0,255]
+    """
+    return img != 0
 
 
 def write_report(metrics: List[MetricWrapper], path: str, task_config: Any):

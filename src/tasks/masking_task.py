@@ -2,6 +2,7 @@ import logging
 import os
 import cv2
 from typing import Any
+import numpy as np
 from tqdm import tqdm
 
 
@@ -36,12 +37,17 @@ class MaskingTask(BaseTask):
         for sample in tqdm(self.query_dataset, total=self.query_dataset.size()):
             image = sample.image
             mask_gt = sample.mask
+            mask_pred = None
 
             for pp in self.preprocessing:
                 output = pp.run(image)
-                image = output["mask"]
+                image = output["result"]
 
-            mask_pred = image
+                if "mask" in output:
+                    mask_pred = output["mask"]
+                    image = image * np.expand_dims(mask_pred / 255, axis=-1)
+
+            assert mask_pred is not None
 
             for metric in self.metrics:
                 metric.compute([mask_gt], [mask_pred])

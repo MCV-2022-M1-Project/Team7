@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from src.common.registry import Registry
 from src.metrics.base import Metric, GraphMetric
-from src.common.utils import image_normalize, compute_pre_rec
+from src.common.utils import binarize, image_normalize, compute_pre_rec
 
 
 @Registry.register_metric
@@ -54,8 +54,8 @@ class Precision(Metric):
         """
         mask1 = array(mask1)
         mask2 = array(mask2)
-        mask1 = image_normalize(mask1)
-        mask2 = image_normalize(mask2)
+        mask1 = binarize(mask1)
+        mask2 = binarize(mask2)
         #true_values = mask1
         #predictions = mask2
         #print(true_values)
@@ -81,8 +81,8 @@ class Recall(Metric):
         """
         mask1 = array(mask1)
         mask2 = array(mask2)
-        mask1 = image_normalize(mask1)
-        mask2 = image_normalize(mask2)
+        mask1 = binarize(mask1)
+        mask2 = binarize(mask2)
         recall = (mask1==mask2).sum()/(mask1.sum()+1e-8)
         return recall
 
@@ -105,8 +105,8 @@ class F1(Metric):
 
         mask1 = array(mask1)
         mask2 = array(mask2)
-        mask1 = image_normalize(mask1)
-        mask2 = image_normalize(mask2)
+        mask1 = binarize(mask1)
+        mask2 = binarize(mask2)
         precision = (mask1==mask2).sum()/(mask2.sum()+1e-8)
         recall = (mask1==mask2).sum()/(mask1.sum()+1e-8)
         return 2*recall*precision/(recall+precision)
