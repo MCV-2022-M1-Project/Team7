@@ -45,7 +45,7 @@ class Dataset:
             self.images.append(image)
 
         for path in ann_paths:
-            with open(path, "r") as f:
+            with open(path, "r", encoding='latin-1') as f:
                 ann = f.read()[2:-2].replace("'", "").split(", ")
 
             self.annotations.append(tuple(ann))
