@@ -2,10 +2,12 @@ import array as np
 import cv2
 import numpy as np
 from typing import Dict, List
+import scipy.stats as stats
 
 from src.common.utils import image_normalize
 from src.common.registry import Registry
 from src.extractors.base import FeaturesExtractor
+
 
 
 @Registry.register_features_extractor
@@ -53,6 +55,42 @@ class HistogramRGBConcatExtractor(FeaturesExtractor):
             image_feats = cv2.calcHist(bgr_planes, [0], None, [256], [0, 256]).ravel() 
             image_feats = image_feats / np.max(image_feats)
             image_feats_list.append(image_feats)
+
+        return {
+            "result": image_feats_list,
+        }
+
+@Registry.register_features_extractor
+class HistogramMomentsExtractor(FeaturesExtractor):
+    name: str = "hist_moments_extractor"
+
+    def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
+        """
+        Simple features extractor that extracts the histogram of the
+        image and then computes the moments.
+
+        Args:
+            images: The list of numpy arrays representing the images.
+
+        Returns:
+            A dictionary whose result key is the list of computed histograms.
+        """
+        image_feats_list = []
+
+        for image in images:
+            moments = []
+            image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+            for channel in range(3):
+
+                hits = np.histogram(image[:, :, channel], 255)
+                hist_hsv = None
+
+
+
+
+
+            
 
         return {
             "result": image_feats_list,

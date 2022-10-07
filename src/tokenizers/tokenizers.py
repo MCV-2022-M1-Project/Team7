@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from src.common.registry import Registry
 from src.tokenizers.base import BaseTokenizer
+from typing_extensions import Protocol
 
 
 def tohsv(img):
