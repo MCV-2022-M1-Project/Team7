@@ -12,6 +12,7 @@ from sklearn.cluster import KMeans
 from src.common.utils import image_normalize
 from src.common.registry import Registry
 from src.extractors.base import FeaturesExtractor
+from src.tokenizers.base import BaseTokenizer
 
 
 # Vsual codebook
@@ -69,7 +70,7 @@ def tohsv(img):
 class VisualCodebookExtractor(FeaturesExtractor):
     name: str = "visual_codebook_extractor"
 
-    def run(self, images: List[np.ndarray], codebook: object = None) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], tokenizer: BaseTokenizer = None) -> Dict[str, np.ndarray]:
 
         """
         Extractor that process the histogram of occurences of a certain visual word with respect a fixed codebook.
@@ -84,13 +85,8 @@ class VisualCodebookExtractor(FeaturesExtractor):
         Returns:
             A dictionary whose result key is the list of computed histograms.
         """
-        assert isinstance(codebook), f'Visual Codebook Extractor must receive a codebook as a parameter. Received: {codebook}'
-
-        features = []
-        for img in images:
-            features.append(codebook.tokenize(img)['features'])
-            
-
+        assert isinstance(tokenizer, BaseTokenizer), f'Visual Codebook Extractor must receive a tokenizer as a parameter. Received: {tokenizer}'
+        features = tokenizer.tokenize(images)["result"]
         return {
             "result": features 
         }

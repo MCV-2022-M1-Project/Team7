@@ -1,10 +1,11 @@
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Type, Optional
 
 from src.preprocessing.base import Preprocessing
 from src.datasets.dataset import Dataset
 from src.extractors.base import FeaturesExtractor
 from src.metrics.base import Metric
 from src.tasks.base import BaseTask
+from src.tokenizers.base import BaseTokenizer
 
 
 class Registry:
@@ -30,6 +31,7 @@ class Registry:
     _datasets: Dict[str, Dataset] = {}
     _metrics: Dict[str, Type[Metric]] = {}
     _tasks: Dict[str, Type[BaseTask]] = {}
+    _tokenizers: Dict[str, Type[BaseTokenizer]] = {}
 
     @classmethod
     def register(cls, name: str, config: Any) -> None:
@@ -57,6 +59,11 @@ class Registry:
     @classmethod
     def register_task(cls, cl) -> Type[BaseTask]:
         cls._tasks[cl.name] = cl
+        return cl
+
+    @classmethod
+    def register_tokenizer(cls, cl) -> Type[BaseTokenizer]:
+        cls._tokenizers[cl.name] = cl
         return cl
 
     @classmethod
@@ -99,6 +106,19 @@ class Registry:
             raise Exception(f"Task '{name}' not registered. Available options are: {', '.join(cls._tasks)}")
 
         return cls._tasks[name]
+
+    @classmethod
+    def get_selected_tokenizer_instance(cls) -> Optional[BaseTokenizer]:
+        if "tokenizer" not in Registry.get("task"):
+            return None
+
+        tokenizer_config = Registry.get("task").tokenizer
+        name = tokenizer_config.name
+
+        if name not in cls._tokenizers:
+            raise Exception(f"Tokenizer '{name}' not registered. Available options are: {', '.join(cls._tasks)}")
+
+        return cls._tokenizers[name](**tokenizer_config)
 
     @classmethod
     def get_selected_features_extractor_instance(cls) -> FeaturesExtractor:

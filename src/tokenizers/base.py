@@ -3,9 +3,14 @@ import numpy as np
 from typing import List, Protocol, Dict
 
 
-class Tokenizer(Protocol):
+class BaseTokenizer(Protocol):
     name: str
-    def tokenize(self, sample):
+
+    def __init__(self, *args, **kwargs) -> None:
         pass
-    def fit(self, samples: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
+
+    def tokenize(self, sample) -> Dict[str, np.ndarray]:
+        pass
+
+    def fit(self, samples: List[np.ndarray], **kwargs) -> None:
         pass

@@ -44,7 +44,7 @@ class Dataset:
             self.masks.append(mask)
 
         for path in image_paths:
-            image = cv2.imread(path)
+            image = cv2.imread(path, cv2.IMREAD_COLOR)
             self.images.append(image)
 
         for path in ann_paths:

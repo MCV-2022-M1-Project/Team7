@@ -3,3 +3,4 @@ from src.extractors import *
 from src.metrics import *
 from src.preprocessing import *
 from src.tasks import *
+from src.tokenizers import *
