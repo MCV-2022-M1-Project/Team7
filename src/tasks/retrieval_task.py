@@ -4,6 +4,7 @@ import numpy as np
 from typing import Any
 from tqdm import tqdm
 from sklearn.neighbors import NearestNeighbors
+import pickle
 
 
 from src.common.registry import Registry
@@ -21,7 +22,6 @@ class RetrievalTask(BaseTask):
 
     def __init__(self, retrieval_dataset: Dataset, query_dataset: Dataset, config: Any, **kwargs) -> None:
         super().__init__(retrieval_dataset, query_dataset, config, **kwargs)
-        self.tokenizer = Registry.get_selected_tokenizer_instance()
         self.preprocessing = Registry.get_selected_preprocessing_instances()
         self.extractor = Registry.get_selected_features_extractor_instance()
         self.metrics = Registry.get_selected_metric_instances()
@@ -36,14 +36,10 @@ class RetrievalTask(BaseTask):
         report_path = os.path.join(output_dir, f"report_{self.name}_on_{self.query_dataset.name}.txt")
         os.makedirs(mask_output_dir, exist_ok=True)
 
-        if self.tokenizer is not None:
-            logging.info("Building tokenizer vocabulary")
-            self.tokenizer.fit(self.query_dataset.images)
-
-        feats_retrieval = self.extractor.run(self.retrieval_dataset.images, tokenizer=self.tokenizer)["result"]
+        feats_retrieval = self.extractor.run(self.retrieval_dataset.images)["result"]
         neighbors = NearestNeighbors(n_neighbors=self.config.features_extractor.n_neighbors)
         neighbors.fit(feats_retrieval)
-
+        final_output=[]
         for sample in tqdm(self.query_dataset, total=self.query_dataset.size()):
             image = sample.image
             mask_gt = sample.mask
@@ -57,9 +53,10 @@ class RetrievalTask(BaseTask):
                     mask_pred = output["mask"]
                     image = (image * np.expand_dims(mask_pred / 255, axis=-1)).astype(np.uint8)
 
-            feats_pred = self.extractor.run([image], tokenizer=self.tokenizer)["result"]
+            feats_pred = self.extractor.run(np.array([image]))["result"]
             top_k_pred = neighbors.kneighbors(feats_pred, n_neighbors=self.config.features_extractor.top_k, return_distance=False)[0]
-
+            final_output.append(list(top_k_pred))
+        
             for metric in self.metrics:
                 metric.compute([sample.correspondance], [top_k_pred])
 
@@ -69,3 +66,6 @@ class RetrievalTask(BaseTask):
             logging.info(f"{metric.metric.name}: {metric.average}")
 
         write_report(self.metrics, report_path, self.config)
+        
+        with open('./output/result.pkl', 'wb') as f:
+            pickle.dump(final_output, f)
