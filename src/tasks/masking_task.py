@@ -52,7 +52,7 @@ class MaskingTask(BaseTask):
             for metric in self.metrics:
                 metric.compute([mask_gt], [mask_pred])
 
-            cv2.imwrite(os.path.join(mask_output_dir, f"{sample.id}_mask.jpg"), mask_pred)
+            cv2.imwrite(os.path.join(mask_output_dir, f"{sample.id:05d}.png"), mask_pred)
 
         logging.info(f"Printing report and saving to disk.")
         for metric in self.metrics:
