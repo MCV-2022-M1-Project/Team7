@@ -25,7 +25,7 @@ class HistogramGrayscaleExtractor(FeaturesExtractor):
         Returns:
             A dictionary whose result key is the list of computed histograms.
         """
-        feats = [image_normalize(cv2.calcHist([np.mean(img, axis=-1).astype('uint8')], [0], None, [256], [0,256])).flatten() for img in images]
+        feats = [image_normalize(cv2.calcHist([np.mean(img, axis=-1).astype('uint8')], [0], None, [256], [0,256])).flatten()[1:] for img in images]
         return {
             "result": feats,
         }
@@ -84,8 +84,10 @@ class HistogramMomentsExtractor(FeaturesExtractor):
             for channel in range(3):
 
                 hist, _ = np.histogram(image[:, :, channel], 255)
+                hist = hist[1:]
                 hist = hist/np.sum(hist)
                 hist_hsv, _ = np.histogram(image_hsv[:, :, channel], 255)
+                hist_hsv = hist[1:]
                 hist_hsv = hist_hsv/np.sum(hist_hsv)
                 moments.extend([hist_hsv.mean(), hist.mean(),
                                 hist_hsv.std(), hist.std(),
