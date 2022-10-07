@@ -7,7 +7,7 @@ task:
 
   features_extractor: 
     name: visual_codebook_extractor
-    n_neighbors: 10
+    n_neighbors: 20
     top_k: 3
 
   metrics:
