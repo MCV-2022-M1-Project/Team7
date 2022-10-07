@@ -37,7 +37,7 @@ class RetrievalTask(BaseTask):
         os.makedirs(mask_output_dir, exist_ok=True)
 
         feats_retrieval = self.extractor.run(self.retrieval_dataset.images)["result"]
-        neighbors = NearestNeighbors(n_neighbors=self.config.features_extractor.n_neighbors)
+        neighbors = NearestNeighbors(n_neighbors=self.config.features_extractor.n_neighbors, metric='cosine')
         neighbors.fit(feats_retrieval)
         final_output=[]
         for sample in tqdm(self.query_dataset, total=self.query_dataset.size()):
