@@ -47,7 +47,7 @@ tools/
     ...
 ```
 
-2. Run the pipeline:
+3. Run the pipeline:
 ```
 python main.py
 ```
