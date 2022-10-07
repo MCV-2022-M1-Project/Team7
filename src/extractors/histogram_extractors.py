@@ -84,15 +84,44 @@ class HistogramMomentsExtractor(FeaturesExtractor):
             for channel in range(3):
 
                 hist, _ = np.histogram(image[:, :, channel], 255)
+                hist = hist/np.sum(hist)
                 hist_hsv, _ = np.histogram(image_hsv[:, :, channel], 255)
-                
+                hist_hsv = hist_hsv/np.sum(hist_hsv)
                 moments.extend([hist_hsv.mean(), hist.mean(),
-                                hist_hsv.var(), hist.var(),
+                                hist_hsv.std(), hist.std(),
                                 skew(hist_hsv),  skew(hist),
-                                kurtosis(hist_hsv), kurtosis(hist_hsv)
                                 ])
             image_feats_list.append(moments)
 
+
+        return {
+            "result": image_feats_list,
+        }
+
+@Registry.register_features_extractor
+class HistogramThresholdExtractor(FeaturesExtractor):
+    name: str = "hist_thr_extractor"
+
+    def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
+        """
+        Simple features extractor that extracts the histogram of the
+        image and then computes the moments.
+
+        Args:
+            images: The list of numpy arrays representing the images.
+
+        Returns:
+            A dictionary whose result key is the list of computed histograms.
+        """
+        image_feats_list = []
+
+        for image in images:
+
+            image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+            mask = image_hsv[:, :, 0] <= (image_hsv[:, :, 0].mean()+image_hsv[:, :, -1].std())
+            hist, _ = np.histogram(image_hsv[:, :, -1][mask], 255)
+            hist = hist / (image_hsv.shape[0]*image.shape[1])
+            image_feats_list.append(hist)
 
         return {
             "result": image_feats_list,
