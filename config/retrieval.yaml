@@ -3,7 +3,7 @@ task:
   output_dir: "./output"
 
   tokenizer:
-    name: cum_hist_extractor
+    name: visual_codebook_extractor
 
   features_extractor: 
     name: hist_moments_extractor
