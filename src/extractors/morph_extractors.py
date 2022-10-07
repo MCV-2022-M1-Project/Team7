@@ -12,7 +12,7 @@ from src.extractors.base import FeaturesExtractor
 class GrayscaleExtractor(FeaturesExtractor):
     name: str = "grayscale_extractor"
 
-    def run(self, images: List[np.ndarray]) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         """
         Simple features extractor that extracts the histogram of the
         image converted to grayscale.

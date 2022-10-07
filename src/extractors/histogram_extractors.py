@@ -12,7 +12,7 @@ from src.extractors.base import FeaturesExtractor
 class HistogramGrayscaleExtractor(FeaturesExtractor):
     name: str = "hist_grayscale_extractor"
 
-    def run(self, images: List[np.ndarray]) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         """
         Simple features extractor that extracts the histogram of the
         image converted to grayscale.
@@ -33,7 +33,7 @@ class HistogramGrayscaleExtractor(FeaturesExtractor):
 class HistogramRGBConcatExtractor(FeaturesExtractor):
     name: str = "hist_rgb_concat_extractor"
 
-    def run(self, images: List[np.ndarray]) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         """
         Simple features extractor that extracts the histogram of the
         image converted to grayscale.
@@ -51,6 +51,7 @@ class HistogramRGBConcatExtractor(FeaturesExtractor):
             bgr_planes = cv2.split(image_hsv)
             # image_feats = np.concatenate([cv2.calcHist(bgr_planes, [i], None, [256], [0, 256]).ravel() for i in range(3)])
             image_feats = cv2.calcHist(bgr_planes, [0], None, [256], [0, 256]).ravel() 
+            image_feats = image_feats / np.max(image_feats)
             image_feats_list.append(image_feats)
 
         return {
