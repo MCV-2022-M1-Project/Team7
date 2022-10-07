@@ -17,6 +17,7 @@ class VisualCodebookProcessor(BaseTokenizer):
     name: str = "visual_codebook_tokenizer"
 
     def __init__(self, k_size: int = 32, sample: int = 255, channel=0, num_words: int = 64, **kwargs) -> None:
+        super().__init__()
         self.k_size = k_size
         self.sample = sample
         self.channel = channel
