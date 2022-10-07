@@ -3,10 +3,10 @@ task:
   output_dir: "./output"
 
   tokenizer:
-    name: visual_codebook_extractor
+    name: visual_codebook_tokenizer
 
   features_extractor: 
-    name: hist_moments_extractor
+    name: visual_codebook_extractor
     n_neighbors: 10
     top_k: 3
 
