@@ -86,20 +86,10 @@ class VisualCodebookExtractor(FeaturesExtractor):
         """
         assert isinstance(codebook), f'Visual Codebook Extractor must receive a codebook as a parameter. Received: {codebook}'
 
-        k_size = codebook.k_size
-        channel = codebook.channel
-        sample = codebook.channel
-
         features = []
         for img in images:
-            img = tohsv(img)
-            words_frequency_hist = np.zeros(codebook.num_words)
-            for i_step in range(0, img.shape[0], k_size):
-                for j_step in range(0, img.shape[1], k_size):
-                    hist, _ = np.histogram(img[i_step:i_step+k_size, j_step:j_step+k_size, channel], sample)
-                    value = codebook.bag_of_visual_words.predict([hist])[0]
-                    words_frequency_hist[value] += 1
-            features.append(words_frequency_hist)
+            features.append(codebook.tokenize(img)['features'])
+            
 
         return {
             "result": features 

@@ -11,22 +11,22 @@ from sklearn.cluster import KMeans
 
 from src.common.utils import image_normalize
 from src.common.registry import Registry
-from src.preprocessing.base import Preprocessing
+from src.tokenizers.base import Tokenizer
 
 def tohsv(img):
     return cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-@Registry.register_preprocessing
-class VisualCodebookProcessor(Preprocessing):
-    name: str = "visual_codebook_processor"
+@Registry.register_tokenizer
+class VisualCodebookProcessor(Tokenizer):
+    name: str = "visual_codebook_tokenizer"
 
     def __init__(self, **kwargs) -> None:
         return None
     
-    def run(self, images: List[np.array], k_size: int = 64, sample: int = 128, channel = 0, num_words: int = 64):
+    def run(self, images: List[np.array], k_size: int = 64, sample: int = 128, channel = 0, num_words: int = 64): 
         
         """
-        Processor that generates a visual bag of words codebook by computing local histograms on the whole dataset.
+        Tokenizer that generates a visual bag of words codebook by computing local histograms on the whole dataset.
         Processor clusters the local histograms in order to create regions of feasible words.
 
         Args:
@@ -61,14 +61,23 @@ class VisualCodebookProcessor(Preprocessing):
         self.bag_of_visual_words = gm
 
         return self
+    
+    def fit(self, images: List[np.array], k_size: int = 64, sample: int = 128, channel = 0, num_words: int = 64):
+        return self.run(images, k_size, sample, channel, num_words)
+    
+    def tokenize(self, sample: np.ndarray):
 
+        features = []
+        img = tohsv(sample)
+        words_frequency_hist = np.zeros(self.num_words)
+        for i_step in range(0, img.shape[0], self.k_size):
+            for j_step in range(0, img.shape[1], self.k_size):
+                hist, _ = np.histogram(img[i_step:i_step+self.k_size, j_step:j_step+self.k_size, self.k_size], sample)
+                value = self.bag_of_visual_words.predict([hist])[0]
+                words_frequency_hist[value] += 1
+        features.append(words_frequency_hist)
 
-
-'''
-
-
-
-
-
-
-'''
+        return {
+            "result": features 
+        }
+            
