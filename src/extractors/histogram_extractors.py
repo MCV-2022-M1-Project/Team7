@@ -2,7 +2,7 @@ import array as np
 import cv2
 import numpy as np
 from typing import Dict, List
-import scipy.stats as stats
+from scipy.stats import skew, kurtosis
 
 from src.common.utils import image_normalize
 from src.common.registry import Registry
@@ -83,14 +83,15 @@ class HistogramMomentsExtractor(FeaturesExtractor):
 
             for channel in range(3):
 
-                hits = np.histogram(image[:, :, channel], 255)
-                hist_hsv = None
+                hist, _ = np.histogram(image[:, :, channel], 255)
+                hist_hsv, _ = np.histogram(image[:, :, channel], 255)
 
+                moments.expand([hist_hsv.mean(), hist.mean(),
+                                hist_hsv.var(), hist.var(),
+                                skew(hist_hsv),  skew(hist),
+                                kurtosis(hist_hsv), kurtosis(hist_hsv)
+                                ])
 
-
-
-
-            
 
         return {
             "result": image_feats_list,
