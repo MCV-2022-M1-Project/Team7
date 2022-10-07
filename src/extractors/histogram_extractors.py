@@ -84,13 +84,14 @@ class HistogramMomentsExtractor(FeaturesExtractor):
             for channel in range(3):
 
                 hist, _ = np.histogram(image[:, :, channel], 255)
-                hist_hsv, _ = np.histogram(image[:, :, channel], 255)
+                hist_hsv, _ = np.histogram(image_hsv[:, :, channel], 255)
 
                 moments.extend([hist_hsv.mean(), hist.mean(),
                                 hist_hsv.var(), hist.var(),
                                 skew(hist_hsv),  skew(hist),
                                 kurtosis(hist_hsv), kurtosis(hist_hsv)
                                 ])
+            image_feats_list.append(moments)
 
 
         return {
