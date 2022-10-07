@@ -105,7 +105,7 @@ class HistogramThresholdExtractor(FeaturesExtractor):
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         """
         Simple features extractor that extracts the histogram of the
-        image and then computes the moments.
+        image and then computes thresholded histogram.
 
         Args:
             images: The list of numpy arrays representing the images.
@@ -122,6 +122,35 @@ class HistogramThresholdExtractor(FeaturesExtractor):
             hist, _ = np.histogram(image_hsv[:, :, -1][mask], 255)
             hist = hist / (image_hsv.shape[0]*image.shape[1])
             image_feats_list.append(hist)
+
+        return {
+            "result": image_feats_list,
+        }
+
+@Registry.register_features_extractor
+class CumulativeHistogramExtractor(FeaturesExtractor):
+    name: str = "cum_hist_extractor"
+
+    def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
+        """
+        Simple features extractor that extracts the histogram of the
+        image and then computes the cummulative histogram
+
+        Args:
+            images: The list of numpy arrays representing the images.
+
+        Returns:
+            A dictionary whose result key is the list of computed histograms.
+        """
+        image_feats_list = []
+
+        for image in images:
+
+            image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+            hist, _ = np.histogram(image_hsv[:, :, 0], 256)
+            cumhist = [sum(hist[:i]) for i, _ in enumerate(hist)]
+            image_feats_list.append(cumhist)
+            
 
         return {
             "result": image_feats_list,

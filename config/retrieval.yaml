@@ -2,8 +2,8 @@ task:
   name: retrieval
   output_dir: "./output"
 
-  #tokenizer:
-  #  name: visual_codebook_tokenizer
+  tokenizer:
+    name: cum_hist_extractor
 
   features_extractor: 
     name: hist_moments_extractor
