@@ -51,3 +51,11 @@ tools/
 ```
 python main.py
 ```
+
+3.1 Run the pipeline:
+
+Use config files "config/*.yaml" in order to test a certain pipeline.
+You can change there which objects to use in the pipeline by properly feeding the config file.
+```
+python main.py --config ./config/[TASK_HERE].yaml
+```
