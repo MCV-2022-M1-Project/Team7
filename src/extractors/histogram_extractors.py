@@ -9,6 +9,7 @@ from src.common.utils import image_normalize
 from src.common.registry import Registry
 from src.extractors.base import FeaturesExtractor
 
+
 def tohsv(img):
     return cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
@@ -173,15 +174,44 @@ class LocalHistogramExtractor(FeaturesExtractor):
 
             k_size_i = image_hsv.shape[0] // n_patches
             k_size_j = image_hsv.shape[1] // n_patches
+
+            for i_step in range(0, image_hsv.shape[0] - image_hsv.shape[0]%n_patches, k_size_i):
+                for j_step in range(0, image_hsv.shape[1] - image_hsv.shape[1]%n_patches, k_size_j):
+                    hist, _ = np.histogram(
+                        image_hsv[i_step:i_step+k_size_i, j_step:j_step+k_size_j, channel], sample)
+                    local_hists.append(hist/np.sum(hist))
+
+            image_feature = np.concatenate(local_hists)
+            features.append(image_feature)
+                    
+        return {
+            "result": features
+        }
+
+@Registry.register_features_extractor
+class WeightedLocalHistogramExtractor(FeaturesExtractor):
+    name: str = 'weighted_local_histogram_extractor'
+    def run(self, images: List[np.ndarray], n_patches: int = 1, channel: int = 0, **kwargs) -> Dict[str, np.ndarray]:
+
+        features = []
+        sample = 256
+
+        for image in images:
+            image_hsv = tohsv(image)
+            local_hists = []
+
+            k_size_i = image_hsv.shape[0] // n_patches
+            k_size_j = image_hsv.shape[1] // n_patches
             
             for i_step in range(0, image_hsv.shape[0] - image_hsv.shape[0]%n_patches, k_size_i):
                 for j_step in range(0, image_hsv.shape[1] - image_hsv.shape[1]%n_patches, k_size_j):
                     hist, _ = np.histogram(
                         image_hsv[i_step:i_step+k_size_i, j_step:j_step+k_size_j, channel], sample)
-                    local_hists.append(hist)
+                    probabilities = hist / np.sum(hist)
+                    image_hsv[i_step:i_step+k_size_i, j_step:j_step+k_size_j, channel] = probabilities[image_hsv[i_step:i_step+k_size_i, j_step:j_step+k_size_j, channel]]
 
-            image_feature = np.concatenate(local_hists)
-            features.append(image_feature)
+                            
+            features.append(np.histogram(image_hsv, bins = np.linspace(0, image_hsv.max(), sample))[0])
                     
         return {
             "result": features
