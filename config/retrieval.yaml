@@ -2,24 +2,27 @@ task:
   name: retrieval
   output_dir: "./output"
 
-  tokenizer:
-    name: visual_codebook_tokenizer
-    k_size: 128
-    num_words: 24
+  # tokenizer:
+  #   name: visual_codebook_tokenizer
+  #   k_size: 128
+  #   num_words: 24
 
   features_extractor: 
-    name: visual_codebook_extractor
-    n_neighbors: 20
+    name: hist_rgb_concat_extractor
+    n_neighbors: 8
     top_k: 3
 
+  distance:
+    name: cosine
+
   metrics:
-      - name: raw_accuracy
-      - name: euclidian_distance
-      - name: l1_distance
-      - name: chi2_distance
-      - name: hellinger_kernel_distance
-      - name: histogram_intersection_similarity
-      - name: map
+    - name: raw_accuracy
+    - name: euclidian_distance
+    - name: l1_distance
+    - name: chi2_distance
+    - name: hellinger_kernel_distance
+    - name: histogram_intersection_similarity
+    - name: map
   # preprocessing:
   #   - name: combined_mask_preprocessor
   #     channel: 0
