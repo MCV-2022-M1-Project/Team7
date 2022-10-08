@@ -1,7 +1,7 @@
 import numpy as np
 from skimage import io
 import glob
-from src.metrics.measures import Measures
+from src.metrics.segmentation_metrics import Measures
 
 
 ## 0. =======set the data path=======

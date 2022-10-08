@@ -1,7 +1,7 @@
 import numpy as np
 
-from typing import List, Dict
-from typing_extensions import Protocol
+from typing import List, Dict, Protocol
+
 
 class BaseTokenizer(Protocol):
     name: str

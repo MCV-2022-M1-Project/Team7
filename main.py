@@ -14,7 +14,7 @@ def __parse_args() -> argparse.Namespace:
                         help='location of the dataset')
     parser.add_argument('--retrieval_ds_dir', type=str, default='./datasets/museum',
                         help='location of the dataset')
-    parser.add_argument('--config', type=str, default='./config/retrieval.yaml',
+    parser.add_argument('--config', type=str, default='./config/masking.yaml',
                         help='location of the configuration file')
     parser.add_argument('--batch_size', type=int, default=1,
                         help='training batch size')

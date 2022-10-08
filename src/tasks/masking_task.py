@@ -45,7 +45,7 @@ class MaskingTask(BaseTask):
 
                 if "mask" in output:
                     mask_pred = output["mask"]
-                    image = image * np.expand_dims(mask_pred / 255, axis=-1)
+                    image = image * np.expand_dims(mask_pred, axis=-1)
 
             assert mask_pred is not None
 

@@ -4,6 +4,8 @@ task:
 
   tokenizer:
     name: visual_codebook_tokenizer
+    k_size: 128
+    num_words: 24
 
   features_extractor: 
     name: visual_codebook_extractor

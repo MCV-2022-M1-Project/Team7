@@ -97,7 +97,7 @@ class VarianceMaskPreprocessor(Preprocessing):
 
             returned_image[:, :, i][result] = 0
 
-        return {"result": returned_image, "mask":  (result != 0).astype(np.uint8) * 255 }
+        return {"result": returned_image, "mask":  (result != 0).astype(np.uint8)}
 
 
 @Registry.register_preprocessing
@@ -155,7 +155,7 @@ class LocalVarianceMaskPreprocessor(Preprocessing):
         for i in range(3):
 
             returned_image[:, :, i][mask] = 0
-        return {"result": returned_image, "mask":  (mask != 0).astype(np.uint8) * 255}
+        return {"result": returned_image, "mask":  (mask != 0).astype(np.uint8)}
 
 
 @Registry.register_preprocessing
@@ -204,4 +204,4 @@ class CombinedMaskPreprocessor(Preprocessing):
         for i in range(3):
 
             returned_image[:, :, i][mask] = 0
-        return {"result": returned_image, "mask": (mask != 0).astype(np.uint8) * 255}
+        return {"result": returned_image, "mask": (mask != 0).astype(np.uint8)}

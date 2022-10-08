@@ -1,12 +1,11 @@
 import cv2
 import numpy as np
-from typing import Dict, List
+from typing import Dict, List, Protocol
 from sklearn.cluster import KMeans
 from tqdm import tqdm
 
 from src.common.registry import Registry
 from src.tokenizers.base import BaseTokenizer
-from typing_extensions import Protocol
 
 
 def tohsv(img):
@@ -69,7 +68,7 @@ class VisualCodebookProcessor(BaseTokenizer):
                     value = self.bag_of_visual_words.predict([hist])[0]
                     words_frequency_hist[value] += 1
 
-            features.append(words_frequency_hist)
+            features.append(words_frequency_hist / np.max(words_frequency_hist))
             
         return {
             "result": features
