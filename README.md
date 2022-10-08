@@ -47,7 +47,7 @@ tools/
     ...
 ```
 
-- Run the pipeline:
+## Run the pipeline:
 
 Use config files "config/*.yaml" in order to test a certain pipeline.
 You can change there which objects to use in the pipeline by properly feeding the config file.
