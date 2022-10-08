@@ -1,4 +1,5 @@
 import array as np
+from threading import local
 import cv2
 import numpy as np
 from typing import Dict, List
@@ -8,7 +9,8 @@ from src.common.utils import image_normalize
 from src.common.registry import Registry
 from src.extractors.base import FeaturesExtractor
 
-
+def tohsv(img):
+    return cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
 @Registry.register_features_extractor
 class HistogramGrayscaleExtractor(FeaturesExtractor):
@@ -156,4 +158,25 @@ class CumulativeHistogramExtractor(FeaturesExtractor):
 
         return {
             "result": image_feats_list,
+        }
+
+@Registry.register_features_extractor
+class LocalHistogramExtractor(FeaturesExtractor):
+    name: str = 'local_histogram_extractor'
+    def run(self, images: List[np.ndarray], k_size: int = 250, channel: int = 0, sample: int = 256, **kwargs) -> Dict[str, np.ndarray]:
+
+        features = []
+        for image in images:
+            image_hsv = tohsv(image)
+            local_hists = []
+
+            for i_step in range(0, image_hsv.shape[0], k_size):
+                for j_step in range(0, image_hsv.shape[1], k_size):
+                    hist, _ = np.histogram(
+                        image_hsv[i_step:i_step+k_size, j_step:j_step+k_size, channel], sample)
+                    local_hists.append(hist)
+            features.append(np.concatenate(local_hists))
+                    
+        return {
+            "result": features
         }
