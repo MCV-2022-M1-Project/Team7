@@ -8,13 +8,8 @@ task:
   #   num_words: 24
 
   features_extractor: 
-<<<<<<< HEAD
-    name: local_histogram_extractor
+    name: visual_codebook_extractor
     n_neighbors: 20
-=======
-    name: hist_rgb_concat_extractor
-    n_neighbors: 8
->>>>>>> 684bded1a9840843ff3ea99ad58e0c849ba156e8
     top_k: 3
 
   distance:
