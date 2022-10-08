@@ -1,11 +1,11 @@
 # Team7
 ## Setup 
-1. Create a new Conda environment.
+- 1. Create a new Conda environment.
 ```
 conda create -n "mcv-m1" python=3.8
 conda activate mcv-m1
 ```
-2. Install requirements:
+- 2. Install requirements:
 ```
 pip install -r requirements.txt
 ```
@@ -47,12 +47,12 @@ tools/
     ...
 ```
 
-3. Run the pipeline:
+- 3. Run the pipeline:
 ```
 python main.py
 ```
 
-3.1 Run the pipeline:
+- 3.1 Run the pipeline:
 
 Use config files "config/*.yaml" in order to test a certain pipeline.
 You can change there which objects to use in the pipeline by properly feeding the config file.
