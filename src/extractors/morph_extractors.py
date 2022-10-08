@@ -3,7 +3,6 @@ import cv2
 import numpy as np
 from typing import Dict, List
 
-from src.common.utils import image_normalize
 from src.common.registry import Registry
 from src.extractors.base import FeaturesExtractor
 

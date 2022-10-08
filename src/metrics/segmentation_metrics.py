@@ -29,12 +29,35 @@ class MAE(Metric):
         
         if np.max(predictions) > 1.0:
             predictions = image_normalize(predictions)
-            
+
         h, w = ground_truth.shape[-2],ground_truth.shape[-1]
         sumError = np.sum(np.absolute((ground_truth.astype(float) - predictions.astype(float))))
         maeError = sumError/((float(h)*float(w)+1e-8))
         return maeError
     
+
+@Registry.register_metric    
+class Accuracy(Metric):
+    name: str = "accuracy"
+    
+    def compute(self, ground_truth, predictions):
+        """
+            Compute the precision
+            
+            Args:
+                'ground_truth': ground truth
+                'predictions': predictions
+            
+            Returns: 
+                 precision
+        """
+        ground_truth = array(ground_truth)
+        predictions = array(predictions)
+        ground_truth = binarize(ground_truth)
+        predictions = binarize(predictions)
+        accuracy = (predictions == ground_truth).sum()/(np.prod(ground_truth.shape))
+        return accuracy
+
 
 @Registry.register_metric    
 class Precision(Metric):

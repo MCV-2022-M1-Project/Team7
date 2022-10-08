@@ -4,6 +4,7 @@ task:
 
   metrics:
     - name: mae
+    - name: accuracy
     - name: precision
     - name: recall
     - name: f1

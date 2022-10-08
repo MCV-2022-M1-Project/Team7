@@ -43,7 +43,7 @@ class RetrievalTask(BaseTask):
 
         logging.info("Extracting retrieval dataset features...")
         feats_retrieval = self.extractor.run(self.retrieval_dataset.images, tokenizer=self.tokenizer)["result"]
-        neighbors = NearestNeighbors(n_neighbors=self.config.features_extractor.n_neighbors, metric='cosine')
+        neighbors = NearestNeighbors(n_neighbors=self.config.features_extractor.n_neighbors, metric=self.config.distance.name)
         neighbors.fit(feats_retrieval)
         final_output=[]
         
