@@ -54,3 +54,5 @@ You can change there which objects to use in the pipeline by properly feeding th
 ```
 python main.py --config ./config/[TASK_HERE].yaml
 ```
+
+
