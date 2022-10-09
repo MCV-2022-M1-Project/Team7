@@ -104,7 +104,7 @@ class VarianceMaskPreprocessor(Preprocessing):
 class LocalVarianceMaskPreprocessor(Preprocessing):
     name: str = "local_variance_mask_preprocessor"
 
-    def __init__(self,  channel: int = 0, kernel_size: int = 5, thr_global: float = 5,  **kwargs) -> None:
+    def __init__(self,  channel: int = 0, kernel_size: int = 10, thr_global: float = 2.5,  **kwargs) -> None:
         self.channel = channel
         self.kernel_size = kernel_size
         self.thr_global = thr_global
