@@ -23,7 +23,7 @@ def __parse_args() -> argparse.Namespace:
     parser.add_argument('--inference_only', action="store_true",
                         help='run inference and skip metrics computation')
     parser.add_argument('--num_workers', type=int, default=1,
-                        help='training batch size')
+                        help='number of parallel workers')
     args = parser.parse_args()
     return args
 
