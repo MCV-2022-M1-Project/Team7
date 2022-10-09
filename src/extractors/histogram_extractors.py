@@ -83,7 +83,6 @@ class HistogramMomentsExtractor(FeaturesExtractor):
             image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
             for channel in range(3):
-
                 hist, _ = np.histogram(image[:, :, channel], 255)
                 hist = hist[1:]
                 hist = hist/np.sum(hist)
@@ -95,7 +94,6 @@ class HistogramMomentsExtractor(FeaturesExtractor):
                                 skew(hist_hsv),  skew(hist),
                                 ])
             image_feats_list.append(moments)
-
 
         return {
             "result": image_feats_list,
@@ -124,7 +122,7 @@ class HistogramThresholdExtractor(FeaturesExtractor):
             mask = image_hsv[:, :, 0] <= (image_hsv[:, :, 0].mean()+image_hsv[:, :, -1].std())
             hist, _ = np.histogram(image_hsv[:, :, -1][mask], 255)
             hist = hist / (image_hsv.shape[0]*image.shape[1])
-            image_feats_list.append(hist)
+            image_feats_list.append(hist[1:])
 
         return {
             "result": image_feats_list,
@@ -148,13 +146,11 @@ class CumulativeHistogramExtractor(FeaturesExtractor):
         image_feats_list = []
 
         for image in images:
-
             image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
             hist, _ = np.histogram(image_hsv[:, :, 0], 256)
-            cumhist = [sum(hist[:i]) for i, _ in enumerate(hist)]
+            cumhist = [sum(hist[1:i]) for i, _ in enumerate(hist)]
             image_feats_list.append(cumhist)
             
-
         return {
             "result": image_feats_list,
         }
@@ -177,7 +173,7 @@ class LocalHistogramExtractor(FeaturesExtractor):
                 for j_step in range(0, image_hsv.shape[1] - image_hsv.shape[1]%n_patches, k_size_j):
                     hist, _ = np.histogram(
                         image_hsv[i_step:i_step+k_size_i, j_step:j_step+k_size_j, channel], sample)
-                    local_hists.append(hist/np.sum(hist))
+                    local_hists.append((hist/np.sum(hist))[1:])
 
             image_feature = np.concatenate(local_hists)
             features.append(image_feature)
@@ -196,7 +192,6 @@ class WeightedLocalHistogramExtractor(FeaturesExtractor):
 
         for image in images:
             image_hsv = tohsv(image)
-            local_hists = []
 
             k_size_i = image_hsv.shape[0] // n_patches
             k_size_j = image_hsv.shape[1] // n_patches

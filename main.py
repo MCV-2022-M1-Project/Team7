@@ -18,6 +18,8 @@ def __parse_args() -> argparse.Namespace:
                         help='location of the configuration file')
     parser.add_argument('--batch_size', type=int, default=1,
                         help='training batch size')
+    parser.add_argument('--inference_only', action='store_true', # type=bool,
+                        help='run inference and skip metrics computation')
     args = parser.parse_args()
     return args
 
@@ -43,7 +45,7 @@ def main(args: argparse.Namespace):
     for name, query_dataset in Registry.get_datasets().items():
         logging.info(f"Running task '{config.task.name}' on dataset '{name}'.")
         task = task_class(retrieval_dataset, query_dataset, config.task)
-        task.run()
+        task.run(args.inference_only)
 
 
 if __name__ == "__main__":
