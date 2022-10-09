@@ -8,9 +8,9 @@ task:
 #     num_words: 128
 
   features_extractor: 
-    name: local_histogram_extractor
+    name: hist_grayscale_extractor
     n_neighbors: 20
-    top_k: 10
+    top_k: 1
 
   distance:
     name: cosine
@@ -23,9 +23,9 @@ task:
     - name: hellinger_kernel_distance
     - name: histogram_intersection_similarity
     - name: map
-  preprocessing:
-     - name: combined_mask_preprocessor
-     - channel: 1
+#  preprocessing:
+#     - name: combined_mask_preprocessor
+#     - channel: 1
   
 datasets:
-  - qsd2_w1
+  - qsd1_w1
