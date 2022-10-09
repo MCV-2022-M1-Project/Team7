@@ -51,11 +51,10 @@ class HistogramRGBConcatExtractor(FeaturesExtractor):
         image_feats_list = []
 
         for image in images:
-            image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-            bgr_planes = cv2.split(image_hsv)
+            bgr_planes = cv2.split(image)
             # image_feats = np.concatenate([cv2.calcHist(bgr_planes, [i], None, [256], [0, 256]).ravel() for i in range(3)])
             image_feats = cv2.calcHist(bgr_planes, [0], None, [256], [0, 256]).ravel() 
-            image_feats = image_feats / np.max(image_feats)
+            image_feats = image_feats / np.sum(image_feats)
             image_feats_list.append(image_feats)
 
         return {
