@@ -28,7 +28,7 @@ class RetrievalTask(BaseTask):
         self.metrics = Registry.get_selected_metric_instances()
         self.metrics = wrap_metric_classes(self.metrics)
 
-    def run(self) -> None:
+    def run(self, inference_only: bool = False) -> None:
         """
 
         """
@@ -51,7 +51,6 @@ class RetrievalTask(BaseTask):
 
         for sample in tqdm(self.query_dataset, total=self.query_dataset.size()):
             image = sample.image
-            mask_gt = sample.mask
             mask_pred = None
 
             for pp in self.preprocessing:
@@ -65,16 +64,18 @@ class RetrievalTask(BaseTask):
             feats_pred = self.extractor.run([image], tokenizer=self.tokenizer)["result"]
             top_k_pred = neighbors.kneighbors(feats_pred, n_neighbors=self.config.features_extractor.top_k, return_distance=False)[0]
             final_output.append(list(top_k_pred))
-        
+
+            if not inference_only:
+                for metric in self.metrics:
+                    metric.compute([sample.correspondance], [top_k_pred])
+
+        if not inference_only:
+            logging.info(f"Printing report and saving to disk.")
+
             for metric in self.metrics:
-                metric.compute([sample.correspondance], [top_k_pred])
+                logging.info(f"{metric.metric.name}: {metric.average}")
 
-        logging.info(f"Printing report and saving to disk.")
-
-        for metric in self.metrics:
-            logging.info(f"{metric.metric.name}: {metric.average}")
-
-        write_report(self.metrics, report_path, self.config)
+            write_report(self.metrics, report_path, self.config)
         
         with open(os.path.join(self.config.output_dir, "result.pkl"), 'wb') as f:
             pickle.dump(final_output, f)

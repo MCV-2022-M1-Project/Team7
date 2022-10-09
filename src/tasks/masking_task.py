@@ -25,13 +25,14 @@ class MaskingTask(BaseTask):
         self.metrics = Registry.get_selected_metric_instances()
         self.metrics = wrap_metric_classes(self.metrics)
 
-    def run(self) -> None:
+    def run(self, inference_only: bool = False) -> None:
         """
 
         """
         output_dir = self.config.output_dir
         mask_output_dir = os.path.join(output_dir, "masks")
-        report_path = os.path.join(output_dir, f"report_{self.name}_on_{self.query_dataset.name}.txt")
+        report_path = os.path.join(
+            output_dir, f"report_{self.name}_on_{self.query_dataset.name}.txt")
         os.makedirs(mask_output_dir, exist_ok=True)
 
         for sample in tqdm(self.query_dataset, total=self.query_dataset.size()):
@@ -49,13 +50,16 @@ class MaskingTask(BaseTask):
 
             assert mask_pred is not None
 
+            if not inference_only:
+                for metric in self.metrics:
+                    metric.compute([mask_gt], [mask_pred])
+
+            cv2.imwrite(os.path.join(mask_output_dir,
+                        f"{sample.id:05d}.png"), 255*mask_pred)
+
+        if not inference_only:
+            logging.info(f"Printing report and saving to disk.")
             for metric in self.metrics:
-                metric.compute([mask_gt], [mask_pred])
+                logging.info(f"{metric.metric.name}: {metric.average}")
 
-            cv2.imwrite(os.path.join(mask_output_dir, f"{sample.id:05d}.png"), 255*mask_pred)
-
-        logging.info(f"Printing report and saving to disk.")
-        for metric in self.metrics:
-            logging.info(f"{metric.metric.name}: {metric.average}")
-
-        write_report(self.metrics, report_path, self.config)
+            write_report(self.metrics, report_path, self.config)

@@ -2,30 +2,28 @@ task:
   name: retrieval
   output_dir: "./output"
 
-  tokenizer:
-     name: visual_codebook_tokenizer
-     k_size: 128
-     num_words: 128
+  # tokenizer:
+  #    name: visual_codebook_tokenizer
+  #    k_size: 128
+  #    num_words: 128
 
   features_extractor: 
-    name: visual_codebook_extractor
+    name: local_histogram_extractor
     n_neighbors: 20
-    top_k: 3
+    top_k: 5
+    n_patches: 30
+    channel: 0
 
   distance:
     name: cosine
 
   metrics:
     - name: raw_accuracy
-    - name: euclidian_distance
-    - name: l1_distance
-    - name: chi2_distance
-    - name: hellinger_kernel_distance
-    - name: histogram_intersection_similarity
     - name: map
-  # preprocessing:
-  #   - name: combined_mask_preprocessor
-  #     channel: 0
+
+  preprocessing:
+    - name: variance_mask_preprocessor
+      channel: 1
   
 datasets:
-  - qsd1_w1
+  - qsd2_w1

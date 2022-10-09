@@ -19,7 +19,7 @@ class BaseTask(ABC):
         #     Registry.get_metric(name)() for name, distance in Registry.get("task").metrics
         # ]
 
-    def run(self) -> None:
+    def run(self, inference_only: bool = False) -> None:
         """
         Something like this:
         for sample in self.dataset:
