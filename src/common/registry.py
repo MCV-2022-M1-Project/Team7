@@ -34,8 +34,8 @@ class Registry:
     _tokenizers: Dict[str, Type[BaseTokenizer]] = {}
 
     @classmethod
-    def register(cls, name: str, config: Any) -> None:
-        cls._registry[name] = config
+    def register(cls, name: str, value: Any) -> None:
+        cls._registry[name] = value
 
     @classmethod
     def register_preprocessing(cls, cl) -> Type[Preprocessing]:
@@ -99,20 +99,14 @@ class Registry:
         return cls._metrics[name]
 
     @classmethod
-    def get_selected_task_class(cls) -> Type[BaseTask]:
-        name = Registry.get("task").name
-
+    def get_task_class(cls, name: str) -> Type[BaseTask]:
         if name not in cls._tasks:
             raise Exception(f"Task '{name}' not registered. Available options are: {', '.join(cls._tasks)}")
 
         return cls._tasks[name]
 
     @classmethod
-    def get_selected_tokenizer_instance(cls) -> Optional[BaseTokenizer]:
-        if "tokenizer" not in Registry.get("task"):
-            return None
-
-        tokenizer_config = Registry.get("task").tokenizer
+    def get_tokenizer_instance(cls, tokenizer_config: Any) -> Optional[BaseTokenizer]:
         name = tokenizer_config.name
 
         if name not in cls._tokenizers:
@@ -121,25 +115,19 @@ class Registry:
         return cls._tokenizers[name](**tokenizer_config)
 
     @classmethod
-    def get_selected_features_extractor_instance(cls) -> FeaturesExtractor:
-        return cls.get_features_extractor_class(Registry.get("task").features_extractor.name)() 
+    def get_features_extractor_instance(cls, features_extractor_config: Any) -> FeaturesExtractor:
+        return cls.get_features_extractor_class(features_extractor_config.name)(**features_extractor_config) 
 
     @classmethod
-    def get_selected_preprocessing_instances(cls) -> List[Preprocessing]:
-        if not Registry.get("task").preprocessing:
-            return []
-
+    def get_preprocessing_instances(cls, preprocessing_configs: Any) -> List[Preprocessing]:
         return [
-            cls.get_preprocessing_class(kwargs["name"])(**kwargs) for kwargs in Registry.get("task").preprocessing
+            cls.get_preprocessing_class(kwargs["name"])(**kwargs) for kwargs in preprocessing_configs
         ]
 
     @classmethod
-    def get_selected_metric_instances(cls) -> List[Metric]:
-        if not Registry.get("task").metrics:
-            return []
-
+    def get_metric_instances(cls, metrics_configs: Any) -> List[Metric]:
         return [
-            cls.get_metric_class(m["name"])() for m in Registry.get("task").metrics
+            cls.get_metric_class(m["name"])() for m in metrics_configs
         ]
 
     @classmethod

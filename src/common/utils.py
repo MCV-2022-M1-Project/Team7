@@ -1,8 +1,7 @@
+import json
+import numpy as np
 from dataclasses import dataclass, field
 from typing import Any, List
-
-import numpy as np
-from src.common.registry import Registry
 
 from src.metrics.base import Metric
 
@@ -58,14 +57,10 @@ def binarize(img: np.ndarray) -> np.ndarray:
 
 
 def write_report(metrics: List[MetricWrapper], path: str, task_config: Any):
-    content = f"Task: {task_config.name}\n"
+    content = "Task configuration: \n\n"
+    content += json.dumps(task_config, indent=2)
+    content += f"\n\n--- Metrics ---\n"
 
-    if "features_extractor" in task_config:
-        content += f"Features extractor: {task_config.features_extractor.name}\n"
-
-    if task_config.preprocessing:
-        content += f"Preprocessing methods: {', '.join(pp.name for pp in task_config.preprocessing)}\n"
-    content += f"\n--- Metrics ---\n"
     for metric in metrics:
         content += f"{metric.metric.name}: {metric.average}\n"
 

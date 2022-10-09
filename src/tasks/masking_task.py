@@ -19,20 +19,11 @@ class MaskingTask(BaseTask):
     """
     name: str = "masking"
 
-    def __init__(self, retrieval_dataset: Dataset, query_dataset: Dataset, config: Any, **kwargs) -> None:
-        super().__init__(retrieval_dataset, query_dataset, config, **kwargs)
-        self.preprocessing = Registry.get_selected_preprocessing_instances()
-        self.metrics = Registry.get_selected_metric_instances()
-        self.metrics = wrap_metric_classes(self.metrics)
-
     def run(self, inference_only: bool = False) -> None:
         """
 
         """
-        output_dir = self.config.output_dir
-        mask_output_dir = os.path.join(output_dir, "masks")
-        report_path = os.path.join(
-            output_dir, f"report_{self.name}_on_{self.query_dataset.name}.txt")
+        mask_output_dir = os.path.join(self.output_dir, "masks")
         os.makedirs(mask_output_dir, exist_ok=True)
 
         for sample in tqdm(self.query_dataset, total=self.query_dataset.size()):
@@ -62,4 +53,4 @@ class MaskingTask(BaseTask):
             for metric in self.metrics:
                 logging.info(f"{metric.metric.name}: {metric.average}")
 
-            write_report(self.metrics, report_path, self.config)
+            write_report(self.metrics, self.report_path, self.config)

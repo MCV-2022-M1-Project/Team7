@@ -1,17 +1,16 @@
-task:
-  name: masking
-  output_dir: "./output"
+tasks:
+  - name: masking
 
-  metrics:
-    - name: mae
-    - name: accuracy
-    - name: precision
-    - name: recall
-    - name: f1
+    metrics:
+      - name: mae
+      - name: accuracy
+      - name: precision
+      - name: recall
+      - name: f1
 
-  preprocessing:
-    - name: variance_mask_preprocessor
-      channel: 1
+    preprocessing:
+      - name: variance_mask_preprocessor
+        channel: 1
 
-datasets:
-  - qst2_w1
+    datasets:
+      - qst2_w1

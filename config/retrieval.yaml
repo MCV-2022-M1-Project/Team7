@@ -1,29 +1,44 @@
-task:
-  name: retrieval
-  output_dir: "./output"
+tasks:
+  - name: retrieval
 
-  # tokenizer:
-  #    name: visual_codebook_tokenizer
-  #    k_size: 128
-  #    num_words: 128
+    # tokenizer:
+    #    name: visual_codebook_tokenizer
+    #    k_size: 128
+    #    num_words: 32
 
-  features_extractor: 
-    name: local_histogram_extractor
-    n_neighbors: 20
-    top_k: 5
-    n_patches: 10
-    channel: 1
+    features_extractor: 
+      name: hist_rgb_concat_extractor
+      # n_patches: 10
+      # channel: 0
 
-  distance:
-    name: cosine
+    distance:
+      name: cosine
+      n_neighbors: 20
+      top_k: 10
 
-  metrics:
-    - name: raw_accuracy
-    - name: map
+    metrics:
+      - name: raw_accuracy
+      - name: map
 
-  preprocessing:
-    - name: variance_mask_preprocessor
-      channel: 1
+    preprocessing:
+      - name: local_variance_mask_preprocessor
+        channel: 1
   
-datasets:
-  - qsd2_w1
+    datasets:
+      - qsd2_w1
+
+  - name: retrieval
+    features_extractor: 
+      name: hist_grayscale_extractor
+
+    distance:
+      name: cosine
+      n_neighbors: 20
+      top_k: 10
+
+    metrics:
+      - name: raw_accuracy
+      - name: map
+  
+    datasets:
+      - qsd1_w1

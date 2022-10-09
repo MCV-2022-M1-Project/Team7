@@ -1,15 +1,13 @@
 import logging
 import os
 import numpy as np
-from typing import Any
+import pickle
 from tqdm import tqdm
 from sklearn.neighbors import NearestNeighbors
-import pickle
 
 
 from src.common.registry import Registry
-from src.common.utils import wrap_metric_classes, write_report
-from src.datasets.dataset import Dataset
+from src.common.utils import write_report
 from src.tasks.base import BaseTask
 
 
@@ -20,30 +18,17 @@ class RetrievalTask(BaseTask):
     """
     name: str = "retrieval"
 
-    def __init__(self, retrieval_dataset: Dataset, query_dataset: Dataset, config: Any, **kwargs) -> None:
-        super().__init__(retrieval_dataset, query_dataset, config, **kwargs)
-        self.tokenizer = Registry.get_selected_tokenizer_instance()
-        self.preprocessing = Registry.get_selected_preprocessing_instances()
-        self.extractor = Registry.get_selected_features_extractor_instance()
-        self.metrics = Registry.get_selected_metric_instances()
-        self.metrics = wrap_metric_classes(self.metrics)
-
     def run(self, inference_only: bool = False) -> None:
         """
 
         """
-        output_dir = self.config.output_dir
-        mask_output_dir = os.path.join(output_dir, "masks")
-        report_path = os.path.join(output_dir, f"report_{self.name}_on_{self.query_dataset.name}.txt")
-        os.makedirs(mask_output_dir, exist_ok=True)
-
         if self.tokenizer is not None:
             logging.info("Building tokenizer vocabulary...")
             self.tokenizer.fit(self.query_dataset.images)
 
         logging.info("Extracting retrieval dataset features...")
         feats_retrieval = self.extractor.run(self.retrieval_dataset.images, tokenizer=self.tokenizer)["result"]
-        neighbors = NearestNeighbors(n_neighbors=self.config.features_extractor.n_neighbors, metric=self.config.distance.name)
+        neighbors = NearestNeighbors(n_neighbors=self.config.distance.n_neighbors, metric=self.config.distance.name)
         neighbors.fit(feats_retrieval)
         final_output=[]
         
@@ -62,8 +47,8 @@ class RetrievalTask(BaseTask):
                     image = (image * np.expand_dims(mask_pred, axis=-1)).astype(np.uint8)
 
             feats_pred = self.extractor.run([image], tokenizer=self.tokenizer)["result"]
-            top_k_pred = neighbors.kneighbors(feats_pred, n_neighbors=self.config.features_extractor.top_k, return_distance=False)[0]
-            final_output.append(list(top_k_pred))
+            top_k_pred = neighbors.kneighbors(feats_pred, n_neighbors=self.config.distance.top_k, return_distance=False)[0]
+            final_output.append([int(v) for v in top_k_pred])
 
             if not inference_only:
                 for metric in self.metrics:
@@ -75,7 +60,7 @@ class RetrievalTask(BaseTask):
             for metric in self.metrics:
                 logging.info(f"{metric.metric.name}: {metric.average}")
 
-            write_report(self.metrics, report_path, self.config)
+            write_report(self.metrics, self.report_path, self.config)
         
-        with open(os.path.join(self.config.output_dir, "result.pkl"), 'wb') as f:
+        with open(os.path.join(self.output_dir, "result.pkl"), 'wb') as f:
             pickle.dump(final_output, f)
