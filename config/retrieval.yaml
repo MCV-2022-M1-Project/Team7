@@ -11,8 +11,8 @@ task:
     name: local_histogram_extractor
     n_neighbors: 20
     top_k: 5
-    n_patches: 30
-    channel: 0
+    n_patches: 10
+    channel: 1
 
   distance:
     name: cosine
