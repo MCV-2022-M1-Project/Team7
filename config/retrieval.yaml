@@ -2,13 +2,13 @@ task:
   name: retrieval
   output_dir: "./output"
 
-  tokenizer:
-     name: visual_codebook_tokenizer
-     k_size: 128
-     num_words: 128
+#  tokenizer:
+#     name: visual_codebook_tokenizer
+#     k_size: 128
+#     num_words: 128
 
   features_extractor: 
-    name: visual_codebook_extractor
+    name: local_histogram_extractor
     n_neighbors: 20
     top_k: 3
 
@@ -28,4 +28,4 @@ task:
   #     channel: 0
   
 datasets:
-  - qsd1_w1
+  - museum
