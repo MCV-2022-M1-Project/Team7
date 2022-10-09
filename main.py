@@ -20,10 +20,10 @@ def __parse_args() -> argparse.Namespace:
                         help='location of the output')
     parser.add_argument('--config', type=str, default='./config/retrieval.yaml',
                         help='location of the configuration file')
-    parser.add_argument('--batch_size', type=int, default=1,
-                        help='training batch size')
     parser.add_argument('--inference_only', action="store_true",
                         help='run inference and skip metrics computation')
+    parser.add_argument('--num_workers', type=int, default=1,
+                        help='training batch size')
     args = parser.parse_args()
     return args
 
