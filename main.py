@@ -11,14 +11,14 @@ from src.datasets.dataset import Dataset
 
 def __parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description='Steganography trainer parser')
+        description='M1 project parser')
     parser.add_argument('--datasets_dir', type=str, default='./datasets',
-                        help='location of the dataset')
+                        help='location of the datasets')
     parser.add_argument('--retrieval_ds_dir', type=str, default='./datasets/museum',
-                        help='location of the dataset')
+                        help='location of the retrieval dataset')
     parser.add_argument('--output_dir', type=str, default='./output',
                         help='location of the output')
-    parser.add_argument('--config', type=str, default='./config/retrieval.yaml',
+    parser.add_argument('--config', type=str, default='./config/masking.yaml',
                         help='location of the configuration file')
     parser.add_argument('--inference_only', action="store_true",
                         help='run inference and skip metrics computation')

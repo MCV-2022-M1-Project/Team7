@@ -13,4 +13,4 @@ tasks:
         channel: 1
 
     datasets:
-      - qst2_w1
+      - qsd2_w1
