@@ -17,6 +17,9 @@ def tohsv(img):
 class HistogramGrayscaleExtractor(FeaturesExtractor):
     name: str = "hist_grayscale_extractor"
 
+     def __init__(self, *args, **kwargs) -> None:
+        return None
+    
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         """
         Simple features extractor that extracts the histogram of the
@@ -37,7 +40,8 @@ class HistogramGrayscaleExtractor(FeaturesExtractor):
 @Registry.register_features_extractor
 class HistogramRGBConcatExtractor(FeaturesExtractor):
     name: str = "hist_rgb_concat_extractor"
-
+    def __init__(self, *args, **kwargs) -> None:
+        return None
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         """
         Simple features extractor that extracts the histogram of the
@@ -64,7 +68,8 @@ class HistogramRGBConcatExtractor(FeaturesExtractor):
 @Registry.register_features_extractor
 class HistogramMomentsExtractor(FeaturesExtractor):
     name: str = "hist_moments_extractor"
-
+    def __init__(self, *args, **kwargs) -> None:
+        return None
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         """
         Simple features extractor that extracts the histogram of the
@@ -102,7 +107,8 @@ class HistogramMomentsExtractor(FeaturesExtractor):
 @Registry.register_features_extractor
 class HistogramThresholdExtractor(FeaturesExtractor):
     name: str = "hist_thr_extractor"
-
+    def __init__(self, *args, **kwargs) -> None:
+        return None
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         """
         Simple features extractor that extracts the histogram of the
@@ -131,7 +137,8 @@ class HistogramThresholdExtractor(FeaturesExtractor):
 @Registry.register_features_extractor
 class CumulativeHistogramExtractor(FeaturesExtractor):
     name: str = "cum_hist_extractor"
-
+    def __init__(self, *args, **kwargs) -> None:
+        return None
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         """
         Simple features extractor that extracts the histogram of the
@@ -158,6 +165,8 @@ class CumulativeHistogramExtractor(FeaturesExtractor):
 @Registry.register_features_extractor
 class LocalHistogramExtractor(FeaturesExtractor):
     name: str = 'local_histogram_extractor'
+    def __init__(self, *args, **kwargs) -> None:
+        return None
     def run(self, images: List[np.ndarray], n_patches: int = 10, channel: int = 0, sample: int = 255, **kwargs) -> Dict[str, np.ndarray]:
 
         features = []
@@ -185,6 +194,10 @@ class LocalHistogramExtractor(FeaturesExtractor):
 @Registry.register_features_extractor
 class WeightedLocalHistogramExtractor(FeaturesExtractor):
     name: str = 'weighted_local_histogram_extractor'
+
+    def __init__(self, *args, **kwargs) -> None:
+        return None
+
     def run(self, images: List[np.ndarray], n_patches: int = 1, channel: int = 0, **kwargs) -> Dict[str, np.ndarray]:
 
         features = []
@@ -215,7 +228,10 @@ class WeightedLocalHistogramExtractor(FeaturesExtractor):
 class PyramidLocalHistogramExtractor(FeaturesExtractor):
     name: str = 'pyramid_local_histogram_extractor'
 
-    def extract_patches(self, image,  n_patches: int = 10, channel: int = 0, sample: int = 48, **kwargs) -> np.ndarray:
+    def __init__(self, *args, **kwargs) -> None:
+        return None
+
+    def extract_patches(self, image,  n_patches: int = 10, channel: int = 0, sample: int = 48, *args, **kwargs) -> np.ndarray:
         local_hists = []
 
         k_size_i = image.shape[0] // n_patches
