@@ -247,7 +247,7 @@ class PyramidLocalHistogramExtractor(FeaturesExtractor):
 
         return image_feature
 
-    def run(self, images: List[np.ndarray], initial_patches: int = 2, num_pyramid_levels: int = 6, channel: int = 0, sample: int = 48, *args, **kwargs) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], initial_patches: int = 2, num_pyramid_levels: int = 6, sample: int = 48, *args, **kwargs) -> Dict[str, np.ndarray]:
 
         features = []
 
@@ -255,7 +255,8 @@ class PyramidLocalHistogramExtractor(FeaturesExtractor):
             image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
             local_hists = []
             for level in range(1, num_pyramid_levels+1):
-                local_hists.append(self.extract_patches(image, initial_patches * level, channel, sample))
+                for channel in range(3):
+                    local_hists.append(self.extract_patches(image, initial_patches * level, channel, sample))
             features.append(np.concatenate(local_hists))
 
             
