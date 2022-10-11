@@ -60,7 +60,9 @@ class RetrievalTask(BaseTask):
             for metric in self.metrics:
                 logging.info(f"{metric.metric.name}: {metric.average}")
 
-            write_report(self.metrics, self.report_path, self.config)
+            write_report(self.report_path, self.config, self.metrics)
+        else:
+            write_report(self.report_path, self.config)
         
         with open(os.path.join(self.output_dir, "result.pkl"), 'wb') as f:
             pickle.dump(final_output, f)
