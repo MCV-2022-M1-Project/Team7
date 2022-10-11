@@ -7,7 +7,7 @@ tasks:
     #    num_words: 32
 
     features_extractor: 
-      name: hist_rgb_concat_extractor
+      name: pyramid_local_histogram_extractor
       # n_patches: 10
       # channel: 0
 
