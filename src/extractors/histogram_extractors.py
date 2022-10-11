@@ -209,3 +209,41 @@ class WeightedLocalHistogramExtractor(FeaturesExtractor):
         return {
             "result": features
         }
+
+
+@Registry.register_features_extractor
+class PyramidLocalHistogramExtractor(FeaturesExtractor):
+    name: str = 'pyramid_local_histogram_extractor'
+
+    def extract_patches(self, image,  n_patches: int = 10, channel: int = 0, sample: int = 48, **kwargs) -> np.ndarray:
+        local_hists = []
+
+        k_size_i = image.shape[0] // n_patches
+        k_size_j = image.shape[1] // n_patches
+
+        for i_step in range(0, image.shape[0] - image.shape[0]%n_patches, k_size_i):
+            for j_step in range(0, image.shape[1] - image.shape[1]%n_patches, k_size_j):
+                hist, _ = np.histogram(
+                    image[i_step:i_step+k_size_i, j_step:j_step+k_size_j, channel], sample)
+                local_hists.append((hist/np.sum(hist)))
+
+        image_feature = np.concatenate(local_hists)
+
+        return image_feature
+
+    def run(self, images: List[np.ndarray], initial_patches: int = 2, num_pyramid_levels: int = 6, channel: int = 0, sample: int = 48, **kwargs) -> Dict[str, np.ndarray]:
+
+        features = []
+
+        for image in images:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+            local_hists = []
+            for level in range(1, num_pyramid_levels+1):
+                local_hists.append(self.extract_patches(image, initial_patches * level, channel, sample))
+            features.append(np.concatenate(local_hists))
+
+            
+                    
+        return {
+            "result": features
+        }
