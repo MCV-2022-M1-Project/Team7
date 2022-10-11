@@ -17,7 +17,7 @@ def tohsv(img):
 class HistogramGrayscaleExtractor(FeaturesExtractor):
     name: str = "hist_grayscale_extractor"
 
-     def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         return None
     
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
