@@ -6,7 +6,8 @@ from src.preprocessing.base import Preprocessing
 from src.common.registry import Registry
 
 
-def sd(sample: np.ndarray) -> np.float32: return sample.std()
+def std(sample: np.ndarray) -> np.float32: return sample.std()
+def var(sample: np.ndarray) -> np.float32: return sample.var()
 
 
 def fill(img: np.ndarray, kernel: tuple = (10, 10), iterations=1) -> np.ndarray:
@@ -14,22 +15,43 @@ def fill(img: np.ndarray, kernel: tuple = (10, 10), iterations=1) -> np.ndarray:
     Performs filling operation by cv2 openning.
 
     '''
-
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernel)
-    return ~cv2.morphologyEx(~img, cv2.MORPH_OPEN, kernel, iterations=iterations)
+    return cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel, iterations=iterations)
 
 
 def tohsv(img):
     return cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
 
+def tolab(img):
+    return cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+
+
+def togray(img):
+    return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+
+TO_COLOR_SPACE: Dict[str, Callable] = {
+    "hsv": tohsv,
+    "lab": tolab,
+    "gray": togray,
+}
+
+
+METRICS: Dict[str, Callable] = {
+    "std": std,
+    "var": var
+}
+
+
 @Registry.register_preprocessing
 class VarianceMaskPreprocessor(Preprocessing):
     name: str = "variance_mask_preprocessor"
 
-    def __init__(self, channel: int = 0, metric: Callable = sd, thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
+    def __init__(self, color_space: str = "hsv", channel: int = 0, metric: str = "std", thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
+        self.color_space = TO_COLOR_SPACE[color_space]
         self.channel = channel
-        self.metric = metric
+        self.metric = METRICS[metric]
         self.thr_global = thr_global
         self.fill_holes = fill_holes
 
@@ -64,9 +86,13 @@ class VarianceMaskPreprocessor(Preprocessing):
         '''
 
         # TODO: Precondition: Channel first or channel last?
-        image_hsv = tohsv(image)
+        image_converted = self.color_space(image)
         # Select the channel we are working with from the parameter channel.
-        sample_image = image_hsv[:, :, self.channel]
+        sample_image = image_converted
+
+        if len(image_converted.shape) > 2:
+            sample_image = sample_image[:, :, self.channel] * 1.5
+
         horizontal_mask = np.zeros_like(
             sample_image)  # Create masks for scanning
         vertical_mask = np.zeros_like(horizontal_mask)
@@ -162,7 +188,7 @@ class LocalVarianceMaskPreprocessor(Preprocessing):
 class CombinedMaskPreprocessor(Preprocessing):
     name: str = "combined_mask_preprocessor"
 
-    def __init__(self, channel: int = 0, kernel_size: int = 5, thr_global: float = 20, thr_local: float = 5, fill_holes: bool = True, metric: Callable = sd, **kwarg) -> None:
+    def __init__(self, channel: int = 0, kernel_size: int = 5, thr_global: float = 20, thr_local: float = 5, fill_holes: bool = True, metric: Callable = std, **kwarg) -> None:
         self.channel = channel
         self.kernel_size = kernel_size
         self.thr_global = thr_global
@@ -205,3 +231,196 @@ class CombinedMaskPreprocessor(Preprocessing):
 
             returned_image[:, :, i][mask] = 0
         return {"result": returned_image, "mask": (mask != 0).astype(np.uint8)}
+
+
+@Registry.register_preprocessing
+class MeanVarianceMaskPreprocessor(Preprocessing):
+    name: str = "meanvariance_mask_preprocessor"
+
+    def __init__(self, color_space: str = "hsv", channel: int = 0, metric: str = "std", thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
+        self.color_space = TO_COLOR_SPACE[color_space]
+        self.channel = channel
+        self.metric = METRICS[metric]
+        self.thr_global = thr_global
+        self.fill_holes = fill_holes
+
+    def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
+        '''
+
+        run(**kwargs) takes an image as an imput and process standard deviation of each row and column.
+        Thresholds and operate boolean and for masking.
+
+        Some asumptions made here: 
+            1. Background is on the sides of the image.
+            2. Painting is on the center of the image.
+            3. Background is the least entropic region (lower variance) of the image. In other words: Walls are more boring than paintings.
+            4. Low-entropy in background produces "spike" on histogram, which is characterized by lower variance.
+            5. Photo of the painting isn't tilted. Thus, we can scan it iteratively.
+
+        Args:
+
+            Image: Sample image to preprocess
+            Channel: Channel we are scanning
+            Metric: Metric used to calculate the least entropic channel, variance has more predictable behaviour.
+            thr_global: Threshold of minimum variance to be considered as possitive sample.
+            fill_holes: Boolean. Some cases, when painting is composed by sub-paintings it detects the sub-painting level. 
+                        We can solve this in order to adjust to the GT by filling the holes.
+
+        Returns:
+            Dict: {
+                "ouput": Processed image cropped with mask
+                "mask": mask obtained with method 
+            }
+
+        '''
+
+        # TODO: Precondition: Channel first or channel last?
+        image_converted = self.color_space(image)
+        # Select the channel we are working with from the parameter channel.
+        sample_image = image_converted
+
+        if len(image_converted.shape) > 2:
+            sample_image = sample_image[:, :, self.channel]
+
+        horizontal_mask = np.zeros_like(
+            sample_image)  # Create masks for scanning
+        vertical_mask = np.zeros_like(horizontal_mask)
+        shape = image.shape
+
+        ### Vertical scan ###
+        for col in range(shape[0]):
+            col_vector = sample_image[col, :]
+            col_std = std(col_vector)
+            col_mean = np.mean(col_vector)
+            vertical_mask[col, :] = np.abs(col_vector - col_mean) > col_std
+
+        ### Horizontal scan ###
+        for row in range(shape[1]):
+            row_vector = sample_image[:, row]
+            row_std = std(row_vector)
+            row_mean = np.mean(row_vector)
+            horizontal_mask[:, row] = np.abs(row_vector - row_mean) > row_std
+
+        # Perform thresholding to minimum variance required and type to cv2 needs.
+        result = (255 * (vertical_mask * horizontal_mask)).astype(np.uint8)
+        # Perform AND operation in order to calculate intersection of background columns and rows.
+        if self.fill_holes:
+            # If fill-holes is set to true, fill the image holes.
+            result = fill(result)
+        result *= 1
+        returned_image = image.copy()
+        for i in range(3):
+
+            returned_image[:, :, i][result] = 0
+
+        return {"result": returned_image, "mask":  (result != 0).astype(np.uint8)}
+
+
+@Registry.register_preprocessing
+class MeanVarianceIterMaskPreprocessor(Preprocessing):
+    name: str = "meanvarianceiter_mask_preprocessor"
+
+    def __init__(self, color_space: str = "hsv", channel: int = 0, metric: str = "std", thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
+        self.color_space = TO_COLOR_SPACE[color_space]
+        self.channel = channel
+        self.metric = METRICS[metric]
+        self.thr_global = thr_global
+        self.fill_holes = fill_holes
+
+    def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
+        '''
+
+        run(**kwargs) takes an image as an imput and process standard deviation of each row and column.
+        Thresholds and operate boolean and for masking.
+
+        Some asumptions made here: 
+            1. Background is on the sides of the image.
+            2. Painting is on the center of the image.
+            3. Background is the least entropic region (lower variance) of the image. In other words: Walls are more boring than paintings.
+            4. Low-entropy in background produces "spike" on histogram, which is characterized by lower variance.
+            5. Photo of the painting isn't tilted. Thus, we can scan it iteratively.
+
+        Args:
+
+            Image: Sample image to preprocess
+            Channel: Channel we are scanning
+            Metric: Metric used to calculate the least entropic channel, variance has more predictable behaviour.
+            thr_global: Threshold of minimum variance to be considered as possitive sample.
+            fill_holes: Boolean. Some cases, when painting is composed by sub-paintings it detects the sub-painting level. 
+                        We can solve this in order to adjust to the GT by filling the holes.
+
+        Returns:
+            Dict: {
+                "ouput": Processed image cropped with mask
+                "mask": mask obtained with method 
+            }
+
+        '''
+
+        # TODO: Precondition: Channel first or channel last?
+        image_converted = self.color_space(image)
+        # Select the channel we are working with from the parameter channel.
+        sample_image = image_converted
+
+        if len(image_converted.shape) > 2:
+            sample_image = sample_image[:, :, self.channel]
+
+        # Create masks for scanning
+        horizontal_mask = np.zeros(sample_image.shape)
+        vertical_mask = np.zeros_like(horizontal_mask)
+        shape = image.shape
+
+        background_means = (np.mean(sample_image[0, :])
+                           + np.mean(sample_image[-1, :])
+                           + np.mean(sample_image[:, 0])
+                           + np.mean(sample_image[:, -1])) / 4
+        sample_stds = np.std(sample_image)
+
+        ### Vertical scan ###
+        for col in range(shape[0]):
+            col_vector = sample_image[col, :]
+            # col_std = std(col_vector)
+            # col_mean = np.mean(col_vector)
+            inside_frame = False
+
+            for i in range(shape[1]):
+                val = col_vector[i]
+
+                if val - background_means > 0:
+                    inside_frame = True
+                else:
+                    inside_frame = False
+
+                vertical_mask[col, i] = 1 if inside_frame else 0
+
+        ### Horizontal scan ###
+        for row in range(shape[1]):
+            row_vector = sample_image[:, row]
+            # row_std = std(row_vector)
+            # row_mean = np.mean(row_vector)
+            inside_frame = False
+
+            for i in range(shape[0]):
+                val = row_vector[i]
+
+                if val - background_means > 0:
+                    inside_frame = True
+                else:
+                    inside_frame = False
+
+                horizontal_mask[i, row] = 1 if inside_frame else 0
+
+        # Perform thresholding to minimum variance required and type to cv2 needs.
+        result = (255 * (vertical_mask * horizontal_mask)).astype(np.uint8)
+        # Perform AND operation in order to calculate intersection of background columns and rows.
+        if self.fill_holes:
+            # If fill-holes is set to true, fill the image holes.
+            result = fill(result)
+
+        result *= 1
+        returned_image = image.copy()
+        for i in range(3):
+
+            returned_image[:, :, i][result] = 0
+
+        return {"result": returned_image, "mask":  (result != 0).astype(np.uint8)}

@@ -1,7 +1,7 @@
 import json
 import numpy as np
 from dataclasses import dataclass, field
-from typing import Any, List
+from typing import Any, List, Optional
 
 from src.metrics.base import Metric
 
@@ -56,13 +56,15 @@ def binarize(img: np.ndarray) -> np.ndarray:
     return img != 0
 
 
-def write_report(metrics: List[MetricWrapper], path: str, task_config: Any):
+def write_report(path: str, task_config: Any, metrics: Optional[List[MetricWrapper]] = None):
     content = "Task configuration: \n\n"
     content += json.dumps(task_config, indent=2)
-    content += f"\n\n--- Metrics ---\n"
 
-    for metric in metrics:
-        content += f"{metric.metric.name}: {metric.average}\n"
+    if metrics is not None:
+        content += f"\n\n--- Metrics ---\n"
+        
+        for metric in metrics:
+            content += f"{metric.metric.name}: {metric.average}\n"
 
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)

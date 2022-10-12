@@ -53,4 +53,6 @@ class MaskingTask(BaseTask):
             for metric in self.metrics:
                 logging.info(f"{metric.metric.name}: {metric.average}")
 
-            write_report(self.metrics, self.report_path, self.config)
+            write_report(self.report_path, self.config, self.metrics)
+        else:
+            write_report(self.report_path, self.config)
