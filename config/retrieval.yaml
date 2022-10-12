@@ -7,7 +7,7 @@ tasks:
     #    num_words: 32
 
     features_extractor: 
-      name: pyramid_local_histogram_extractor
+      name: histogram_lab_extractor
       # n_patches: 10
       # channel: 0
 
@@ -20,12 +20,12 @@ tasks:
       - name: raw_accuracy
       - name: map
 
-    preprocessing:
-      - name: local_variance_mask_preprocessor
-        channel: 1
+#    preprocessing:
+#      - name: local_variance_mask_preprocessor
+#        channel: 1
   
     datasets:
-      - qsd2_w1
+      - qsd1_w1
 
   - name: retrieval
     features_extractor: 

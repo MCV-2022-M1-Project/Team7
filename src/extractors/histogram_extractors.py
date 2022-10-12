@@ -264,3 +264,29 @@ class PyramidLocalHistogramExtractor(FeaturesExtractor):
         return {
             "result": features
         }
+
+@Registry.register_features_extractor
+class HistogramLABExtractor(FeaturesExtractor):
+    name: str = 'histogram_lab_extractor'
+
+    def __init__(self, *args, **kwargs) -> None:
+        return None
+    
+    def run(self, images: List[np.ndarray], initial_patches: int = 2, num_pyramid_levels: int = 6, sample: int = 48, *args, **kwargs) -> Dict[str, np.ndarray]:
+
+        features = []
+
+        for image in images:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+            local_hists = []
+            for channel in range(3):
+                hist = np.histogram(image[:, :, channel], 48)[0]
+                local_hists.append(hist / np.sum(hist))
+            
+            features.append(np.concatenate(local_hists))
+
+            
+                    
+        return {
+            "result": features
+        }
