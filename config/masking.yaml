@@ -9,8 +9,11 @@ tasks:
       - name: f1
 
     preprocessing:
-      - name: variance_mask_preprocessor
+      - name: paint_mask_preprocessor
+        color_space: hsv
+        metric: std
         channel: 1
+        # fill_holes: False
 
     datasets:
       - qsd2_w1
