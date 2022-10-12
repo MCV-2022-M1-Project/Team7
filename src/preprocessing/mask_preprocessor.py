@@ -558,3 +558,128 @@ class PaintThePaintingMaskPreprocessor(Preprocessing):
         # mask = cv2.resize(mask, (original_shape[1], original_shape[0]))
         returned_image = image
         return {"result": returned_image, "mask":  mask}
+
+
+@Registry.register_preprocessing
+class PaintThePaintingAdaptativeMaskPreprocessor(Preprocessing):
+    name: str = "painter_adaptative_mask_preprocessor"  
+
+    def __init__(self, color_space: str = "hsv", channel: int = 0, metric: str = "std", thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
+        self.color_space = TO_COLOR_SPACE[color_space]
+        self.channel = channel
+        self.metric = METRICS[metric]
+        self.thr_global = thr_global
+        self.fill_holes = fill_holes
+
+    def painter(self, image):
+        new_image = np.zeros_like(image, dtype=np.uint8)
+        opened = np.zeros_like(image)
+        m, n = image.shape
+        queue = [(0,0)]
+
+        while len(queue) > 0:
+            x, y = queue.pop()
+            new_image[x, y] = 1
+            
+            if x+1 < m and image[x+1,y] == 0 and opened[x+1,y] == 0:
+                opened[x+1,y] = 1
+                queue.append((x+1,y))
+            if x-1 >= 0 and image[x-1,y] == 0 and opened[x-1,y] == 0:
+                opened[x-1,y] = 1
+                queue.append((x-1,y))
+            if y+1 < n and image[x,y+1] == 0 and opened[x,y+1] == 0:
+                opened[x,y+1] = 1
+                queue.append((x,y+1))
+            if y-1 >= 0 and image[x,y-1] == 0 and opened[x,y-1] == 0:
+                opened[x,y-1] = 1
+                queue.append((x,y-1))
+
+        return new_image
+
+    def image_resize(self, image, width = None, height = None, inter = cv2.INTER_AREA):
+        # initialize the dimensions of the image to be resized and
+        # grab the image size
+        dim = None
+        (h, w) = image.shape[:2]
+
+        # if both the width and height are None, then return the
+        # original image
+        if width is None and height is None:
+            return image
+
+        # check to see if the width is None
+        if width is None:
+            # calculate the ratio of the height and construct the
+            # dimensions
+            r = height / float(h)
+            dim = (int(w * r), height)
+
+        # otherwise, the height is None
+        else:
+            # calculate the ratio of the width and construct the
+            # dimensions
+            r = width / float(w)
+            dim = (width, int(h * r))
+
+        # resize the image
+        resized = cv2.resize(image, dim, interpolation = inter)
+
+        # return the resized image
+        return resized
+
+    def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
+        '''
+
+        run(**kwargs) takes an image as an imput and process standard deviation of each row and column.
+        Thresholds and operate boolean and for masking.
+
+        Some asumptions made here: 
+            1. Background is on the sides of the image.
+            2. Painting is on the center of the image.
+            3. Background is the least entropic region (lower variance) of the image. In other words: Walls are more boring than paintings.
+            4. Low-entropy in background produces "spike" on histogram, which is characterized by lower variance.
+            5. Photo of the painting isn't tilted. Thus, we can scan it iteratively.
+
+        Args:
+
+            Image: Sample image to preprocess
+            Channel: Channel we are scanning
+            Metric: Metric used to calculate the least entropic channel, variance has more predictable behaviour.
+            thr_global: Threshold of minimum variance to be considered as possitive sample.
+            fill_holes: Boolean. Some cases, when painting is composed by sub-paintings it detects the sub-painting level. 
+                        We can solve this in order to adjust to the GT by filling the holes.
+
+        Returns:
+            Dict: {
+                "ouput": Processed image cropped with mask
+                "mask": mask obtained with method 
+            }
+
+        '''
+        original_shape = image.shape
+        # image = self.image_resize(image, 400, 400)
+        image_converted = self.color_space(image)
+        # Select the channel we are working with from the parameter channel.
+        sample_image = image_converted
+
+        if len(image_converted.shape) > 2:
+            sample_image = sample_image[:, :, self.channel]
+            
+        mask = (cv2.adaptiveThreshold(sample_image, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                    cv2.THRESH_BINARY, 11, 2) == 0).astype(np.uint8)
+        kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 1))
+        kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 3))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_v, iterations=1)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_h, iterations=1)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_v, iterations=3)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_h, iterations=3)
+        mask = self.painter(mask)
+        kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (48, 1))
+        kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 48))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_v, iterations=1)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_h, iterations=1)
+
+        mask = (mask == 0).astype(np.uint8)
+        # mask = cv2.resize(mask, (original_shape[1], original_shape[0]))
+        returned_image = image
+        return {"result": returned_image, "mask":  mask}
