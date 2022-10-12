@@ -12,7 +12,7 @@ tasks:
       # channel: 0
 
     distance:
-      name: cosine
+      name: l1
       n_neighbors: 20
       top_k: 10
 
