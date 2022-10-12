@@ -656,18 +656,56 @@ class PaintThePaintingAdaptativeMaskPreprocessor(Preprocessing):
             }
 
         '''
-        # original_shape = image.shape
-        # image = self.image_resize(image, 400, 400)
-        image_converted = self.color_space(image)
+        # 93% F1
+        # # original_shape = image.shape
+        # # image = self.image_resize(image, 400, 400)
+        # image_converted = self.color_space(image)
+        # # Select the channel we are working with from the parameter channel.
+        # sample_image = image_converted
+
+        # if len(image_converted.shape) > 2:
+        #     sample_image = sample_image[:, :, self.channel]
+        
+        # mask = cv2.blur(sample_image, (5,5), cv2.BORDER_DEFAULT)
+        # mask = (cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+        #                             cv2.THRESH_BINARY, 11, 2) == 0).astype(np.uint8)
+        # kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 1))
+        # kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 3))
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_v, iterations=1)
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_h, iterations=1)
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_v, iterations=3)
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_h, iterations=3)
+        # mask = self.painter(mask)
+        # kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (12, 1))
+        # kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 12))
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_v, iterations=12)
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_h, iterations=12)
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_v, iterations=2)
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_h, iterations=2)
+
+        # mask = (mask == 0).astype(np.uint8)
+        # # mask = cv2.resize(mask, (original_shape[1], original_shape[0]))
+        # returned_image = image
+        # return {"result": returned_image, "mask":  mask}
+
+        # 1 min 91% F1
+        original_shape = image.shape
+        image_resized = self.image_resize(image, 800, 800)
+        image_converted = self.color_space(image_resized)
         # Select the channel we are working with from the parameter channel.
         sample_image = image_converted
 
         if len(image_converted.shape) > 2:
             sample_image = sample_image[:, :, self.channel]
+
+        dilated_img = cv2.dilate(sample_image, np.ones((5,5), np.uint8))
+        bg_img = cv2.medianBlur(dilated_img, 21)
+        no_shadow_img = 255 - cv2.absdiff(sample_image, bg_img)
+        mask = cv2.normalize(no_shadow_img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
         
-        mask = cv2.blur(sample_image, (5,5), cv2.BORDER_DEFAULT)
+        mask = cv2.blur(sample_image, (5,5), cv2.BORDER_DEFAULT) 
         mask = (cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                    cv2.THRESH_BINARY, 11, 2) == 0).astype(np.uint8)
+                                    cv2.THRESH_BINARY, 13, 2) == 0).astype(np.uint8)
         kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 1))
         kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 3))
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_v, iterations=1)
@@ -677,12 +715,12 @@ class PaintThePaintingAdaptativeMaskPreprocessor(Preprocessing):
         mask = self.painter(mask)
         kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (12, 1))
         kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 12))
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_v, iterations=12)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_h, iterations=12)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_v, iterations=8)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_h, iterations=8)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_v, iterations=2)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_h, iterations=2)
 
         mask = (mask == 0).astype(np.uint8)
-        # mask = cv2.resize(mask, (original_shape[1], original_shape[0]))
+        mask = cv2.resize(mask, (original_shape[1], original_shape[0]))
         returned_image = image
         return {"result": returned_image, "mask":  mask}
