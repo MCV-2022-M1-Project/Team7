@@ -175,8 +175,8 @@ class ExpScaledHistogramExtractor(FeaturesExtractor):
         for image in images:
             image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
             hist, _ = np.histogram(image_hsv[:, :, 0], 256)
-            hist = hist.exp()
-            image_feats_list.append(hist)
+            hist = np.exp(hist/hist.max())
+            image_feats_list.append(hist/np.sum(hist))
             
         return {
             "result": image_feats_list,
@@ -316,7 +316,7 @@ class Histogram3DExtractor(FeaturesExtractor):
     def __init__(self, *args, **kwargs) -> None:
         return None
     
-    def run(self, images: List[np.ndarray], sample: int = (3, 3, 3), *args, **kwargs) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], sample: int = (5, 5, 5), *args, **kwargs) -> Dict[str, np.ndarray]:
 
         features = []
 

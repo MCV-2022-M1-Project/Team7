@@ -7,23 +7,23 @@ tasks:
     #    num_words: 32
 
     features_extractor: 
-      name: pyramid_local_histogram_extractor
+      name: 3d_histogram_extractor
       # n_patches: 10
       # channel: 0
 
     distance:
       name: cosine
       n_neighbors: 20
-      top_k: 1
+      top_k: 10
 
     metrics:
       - name: raw_accuracy
       - name: map
 
-    preprocessing:
-      - name: local_variance_mask_preprocessor
-        channel: 1
+    #preprocessing:
+    #  - name: local_variance_mask_preprocessor
+    #    channel: 1
   
     datasets:
-      - qsd2_w1
+      - qsd1_w1
   
