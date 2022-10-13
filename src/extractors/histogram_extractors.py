@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 from typing import Dict, List
 from scipy.stats import skew, kurtosis
+from skimage import color as skcolor
 
 from src.common.utils import image_normalize
 from src.common.registry import Registry
@@ -163,16 +164,35 @@ class CumulativeHistogramExtractor(FeaturesExtractor):
         }
 
 @Registry.register_features_extractor
+class ExpScaledHistogramExtractor(FeaturesExtractor):
+    name: str = "exp_hist_extractor"
+    def __init__(self, *args, **kwargs) -> None:
+        return None
+    def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
+
+        image_feats_list = []
+
+        for image in images:
+            image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+            hist, _ = np.histogram(image_hsv[:, :, 0], 256)
+            hist = np.exp(hist/hist.max())
+            image_feats_list.append(hist/np.sum(hist))
+            
+        return {
+            "result": image_feats_list,
+        }
+
+@Registry.register_features_extractor
 class LocalHistogramExtractor(FeaturesExtractor):
     name: str = 'local_histogram_extractor'
     def __init__(self, *args, **kwargs) -> None:
         return None
-    def run(self, images: List[np.ndarray], n_patches: int = 10, channel: int = 0, sample: int = 255, **kwargs) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], n_patches: int = 10, channel: int = 0, sample: int = 48, **kwargs) -> Dict[str, np.ndarray]:
 
         features = []
 
         for image in images:
-            image_hsv = tohsv(image)
+            image_hsv = skcolor.rgb2lab(image)
             local_hists = []
 
             k_size_i = image_hsv.shape[0] // n_patches
@@ -247,12 +267,12 @@ class PyramidLocalHistogramExtractor(FeaturesExtractor):
 
         return image_feature
 
-    def run(self, images: List[np.ndarray], initial_patches: int = 2, num_pyramid_levels: int = 6, sample: int = 48, *args, **kwargs) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], initial_patches: int = 1, num_pyramid_levels: int = 4, sample: int = 10, *args, **kwargs) -> Dict[str, np.ndarray]:
 
         features = []
 
         for image in images:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+            image = skcolor.rgb2lab(image)
             local_hists = []
             for level in range(1, num_pyramid_levels+1):
                 for channel in range(3):
@@ -277,15 +297,33 @@ class HistogramLABExtractor(FeaturesExtractor):
         features = []
 
         for image in images:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+            image = skcolor.rgb2lab(image)
             local_hists = []
             for channel in range(3):
                 hist = np.histogram(image[:, :, channel], sample)[0]
                 local_hists.append(hist / np.sum(hist))
             
-            features.append(np.concatenate(local_hists))
+            features.append(np.concatenate(local_hists))  
+                    
+        return {
+            "result": features
+        }
 
-            
+@Registry.register_features_extractor
+class Histogram3DExtractor(FeaturesExtractor):
+    name: str = '3d_histogram_extractor'
+
+    def __init__(self, *args, **kwargs) -> None:
+        return None
+    
+    def run(self, images: List[np.ndarray], sample: int = (5, 5, 5), *args, **kwargs) -> Dict[str, np.ndarray]:
+
+        features = []
+
+        for image in images:
+            image = skcolor.rgb2lab(image).reshape(-1, 3)
+            H, _ = np.histogramdd(image, bins = sample)
+            features.append(H.flatten())  
                     
         return {
             "result": features

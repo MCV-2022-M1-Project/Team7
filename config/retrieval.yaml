@@ -1,4 +1,4 @@
-tasks:
+tasks:  
   - name: retrieval
 
     # tokenizer:
@@ -7,29 +7,9 @@ tasks:
     #    num_words: 32
 
     features_extractor: 
-      name: histogram_lab_extractor
+      name: 3d_histogram_extractor
       # n_patches: 10
       # channel: 0
-
-    distance:
-      name: l1
-      n_neighbors: 20
-      top_k: 10
-
-    metrics:
-      - name: raw_accuracy
-      - name: map
-
-#    preprocessing:
-#      - name: local_variance_mask_preprocessor
-#        channel: 1
-  
-    datasets:
-      - qsd1_w1
-
-  - name: retrieval
-    features_extractor: 
-      name: hist_grayscale_extractor
 
     distance:
       name: cosine
@@ -39,6 +19,11 @@ tasks:
     metrics:
       - name: raw_accuracy
       - name: map
+
+    #preprocessing:
+    #  - name: local_variance_mask_preprocessor
+    #    channel: 1
   
     datasets:
       - qsd1_w1
+  
