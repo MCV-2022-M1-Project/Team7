@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 from typing import Dict, List
 from scipy.stats import skew, kurtosis
+from skimage import color as skcolor
 
 from src.common.utils import image_normalize
 from src.common.registry import Registry
@@ -247,12 +248,12 @@ class PyramidLocalHistogramExtractor(FeaturesExtractor):
 
         return image_feature
 
-    def run(self, images: List[np.ndarray], initial_patches: int = 2, num_pyramid_levels: int = 6, sample: int = 48, *args, **kwargs) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], initial_patches: int = 1, num_pyramid_levels: int = 4, sample: int = 10, *args, **kwargs) -> Dict[str, np.ndarray]:
 
         features = []
 
         for image in images:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+            image = skcolor.rgb2lab(image)
             local_hists = []
             for level in range(1, num_pyramid_levels+1):
                 for channel in range(3):
@@ -277,15 +278,33 @@ class HistogramLABExtractor(FeaturesExtractor):
         features = []
 
         for image in images:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+            image = skcolor.rgb2lab(image)
             local_hists = []
             for channel in range(3):
                 hist = np.histogram(image[:, :, channel], sample)[0]
                 local_hists.append(hist / np.sum(hist))
             
-            features.append(np.concatenate(local_hists))
+            features.append(np.concatenate(local_hists))  
+                    
+        return {
+            "result": features
+        }
 
-            
+@Registry.register_features_extractor
+class Histogram3DExtractor(FeaturesExtractor):
+    name: str = '3d_histogram_extractor'
+
+    def __init__(self, *args, **kwargs) -> None:
+        return None
+    
+    def run(self, images: List[np.ndarray], sample: int = 48, *args, **kwargs) -> Dict[str, np.ndarray]:
+
+        features = []
+
+        for image in images:
+            image = skcolor.rgb2lab(image)
+            H, _ = np.histogramdd(image, bins = (6, 6, 6)) # The number of the beast
+            features.append(H.flatten())  
                     
         return {
             "result": features

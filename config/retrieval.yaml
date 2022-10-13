@@ -7,12 +7,12 @@ tasks:
     #    num_words: 32
 
     features_extractor: 
-      name: histogram_lab_extractor
+      name: pyramid_local_histogram_extractor
       # n_patches: 10
       # channel: 0
 
     distance:
-      name: l1
+      name: manhattan
       n_neighbors: 20
       top_k: 10
 
@@ -28,17 +28,29 @@ tasks:
       - qsd1_w1
 
   - name: retrieval
+
+    # tokenizer:
+    #    name: visual_codebook_tokenizer
+    #    k_size: 128
+    #    num_words: 32
+
     features_extractor: 
-      name: hist_grayscale_extractor
+      name: 3d_histogram_extractor
+      # n_patches: 10
+      # channel: 0
 
     distance:
-      name: cosine
+      name: manhattan
       n_neighbors: 20
       top_k: 10
 
     metrics:
       - name: raw_accuracy
       - name: map
+
+#    preprocessing:
+#      - name: local_variance_mask_preprocessor
+#        channel: 1
   
     datasets:
       - qsd1_w1
