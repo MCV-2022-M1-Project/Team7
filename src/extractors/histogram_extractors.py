@@ -164,6 +164,25 @@ class CumulativeHistogramExtractor(FeaturesExtractor):
         }
 
 @Registry.register_features_extractor
+class ExpScaledHistogramExtractor(FeaturesExtractor):
+    name: str = "exp_hist_extractor"
+    def __init__(self, *args, **kwargs) -> None:
+        return None
+    def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
+
+        image_feats_list = []
+
+        for image in images:
+            image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+            hist, _ = np.histogram(image_hsv[:, :, 0], 256)
+            hist = hist.exp()
+            image_feats_list.append(hist)
+            
+        return {
+            "result": image_feats_list,
+        }
+
+@Registry.register_features_extractor
 class LocalHistogramExtractor(FeaturesExtractor):
     name: str = 'local_histogram_extractor'
     def __init__(self, *args, **kwargs) -> None:

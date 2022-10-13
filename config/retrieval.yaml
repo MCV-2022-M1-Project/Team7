@@ -20,10 +20,10 @@ tasks:
       - name: raw_accuracy
       - name: map
 
-#    preprocessing:
-#      - name: local_variance_mask_preprocessor
-#        channel: 1
+    preprocessing:
+      - name: local_variance_mask_preprocessor
+        channel: 1
   
     datasets:
-      - qsd1_w1
+      - qsd2_w1
   
