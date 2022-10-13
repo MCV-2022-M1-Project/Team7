@@ -168,12 +168,12 @@ class LocalHistogramExtractor(FeaturesExtractor):
     name: str = 'local_histogram_extractor'
     def __init__(self, *args, **kwargs) -> None:
         return None
-    def run(self, images: List[np.ndarray], n_patches: int = 10, channel: int = 0, sample: int = 255, **kwargs) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], n_patches: int = 10, channel: int = 0, sample: int = 48, **kwargs) -> Dict[str, np.ndarray]:
 
         features = []
 
         for image in images:
-            image_hsv = tohsv(image)
+            image_hsv = skcolor.rgb2lab(image)
             local_hists = []
 
             k_size_i = image_hsv.shape[0] // n_patches
@@ -297,14 +297,53 @@ class Histogram3DExtractor(FeaturesExtractor):
     def __init__(self, *args, **kwargs) -> None:
         return None
     
-    def run(self, images: List[np.ndarray], sample: int = 48, *args, **kwargs) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], sample: int = (3, 3, 3), *args, **kwargs) -> Dict[str, np.ndarray]:
+
+        features = []
+
+        for image in images:
+            image = skcolor.rgb2lab(image).reshape(-1, 3)
+            H, _ = np.histogramdd(image, bins = sample)
+            features.append(H.flatten())  
+                    
+        return {
+            "result": features
+        }
+
+
+@Registry.register_features_extractor
+class Pyramid3DLocalHists(FeaturesExtractor):
+    name: str = 'pyramid_3d_local_histogram_extractor'
+
+    def __init__(self, *args, **kwargs) -> None:
+        return None
+
+    def extract_patches(self, image,  n_patches: int = 10, sample: tuple = (2, 2, 2), *args, **kwargs) -> np.ndarray:
+        local_hists = []
+
+        k_size_i = image.shape[0] // n_patches
+        k_size_j = image.shape[1] // n_patches
+
+        for i_step in range(0, image.shape[0] - image.shape[0]%n_patches, k_size_i):
+            for j_step in range(0, image.shape[1] - image.shape[1]%n_patches, k_size_j):
+                in_hist = image[i_step:i_step+k_size_i, j_step:j_step+k_size_j, :].reshape(-1, 3)
+                hist, _ = np.histogram(in_hist, sample)
+                local_hists.append((hist.flatten()/np.sum(hist)))
+
+        image_feature = np.concatenate(local_hists)
+
+        return image_feature
+
+    def run(self, images: List[np.ndarray], initial_patches: int = 1, num_pyramid_levels: int = 4, sample: tuple = (2, 2, 2), *args, **kwargs) -> Dict[str, np.ndarray]:
 
         features = []
 
         for image in images:
             image = skcolor.rgb2lab(image)
-            H, _ = np.histogramdd(image, bins = (6, 6, 6)) # The number of the beast
-            features.append(H.flatten())  
+            local_hists = []
+            for level in range(1, num_pyramid_levels+1):
+                local_hists.append(self.extract_patches(image, initial_patches * level, sample))
+            features.append(np.concatenate(local_hists))
                     
         return {
             "result": features
