@@ -9,15 +9,15 @@ from src.common.utils import binarize, image_normalize
 @Registry.register_metric
 class MAE(Metric):
     name: str = "mae"
-    
-    def compute(self,ground_truth,predictions):
+
+    def compute(self, ground_truth, predictions):
         """
             Compute the mean absolute error
-            
+
             Args:
                 'ground_truth': HxW or HxWxn (asumme that all the n channels are the same and only the first channel will be used)
                 'predictions': HxW or HxWxn
-            
+
             Returns: 
                 a value MAE, Mean Absolute Error
         """
@@ -26,28 +26,29 @@ class MAE(Metric):
 
         if np.max(ground_truth) > 1.0:
             ground_truth = image_normalize(ground_truth)
-        
+
         if np.max(predictions) > 1.0:
             predictions = image_normalize(predictions)
 
-        h, w = ground_truth.shape[-2],ground_truth.shape[-1]
-        sumError = np.sum(np.absolute((ground_truth.astype(float) - predictions.astype(float))))
+        h, w = ground_truth.shape[-2], ground_truth.shape[-1]
+        sumError = np.sum(np.absolute(
+            (ground_truth.astype(float) - predictions.astype(float))))
         maeError = sumError/((float(h)*float(w)+1e-8))
         return maeError
-    
 
-@Registry.register_metric    
+
+@Registry.register_metric
 class Accuracy(Metric):
     name: str = "accuracy"
-    
+
     def compute(self, ground_truth, predictions):
         """
             Compute the precision
-            
+
             Args:
                 'ground_truth': ground truth
                 'predictions': predictions
-            
+
             Returns: 
                  precision
         """
@@ -55,22 +56,23 @@ class Accuracy(Metric):
         predictions = array(predictions)
         ground_truth = binarize(ground_truth)
         predictions = binarize(predictions)
-        accuracy = (predictions == ground_truth).sum()/(np.prod(ground_truth.shape))
+        accuracy = (predictions == ground_truth).sum() / \
+            (np.prod(ground_truth.shape))
         return accuracy
 
 
-@Registry.register_metric    
+@Registry.register_metric
 class Precision(Metric):
     name: str = "precision"
-    
-    def compute(self,ground_truth,predictions):
+
+    def compute(self, ground_truth, predictions):
         """
             Compute the precision
-            
+
             Args:
                 'ground_truth': ground truth
                 'predictions': predictions
-            
+
             Returns: 
                  precision
         """
@@ -78,21 +80,23 @@ class Precision(Metric):
         predictions = array(predictions)
         ground_truth = binarize(ground_truth)
         predictions = binarize(predictions)
-        precision = ((predictions == 1) & (ground_truth == 1)).sum()/(predictions.sum()+1e-8)
+        precision = ((predictions == 1) & (ground_truth == 1)
+                     ).sum()/(predictions.sum()+1e-8)
         return precision
-    
-@Registry.register_metric    
+
+
+@Registry.register_metric
 class Recall(Metric):
-    name: str="recall"
-    
-    def compute(self,ground_truth,predictions):
+    name: str = "recall"
+
+    def compute(self, ground_truth, predictions):
         """
             Compute the precision
-            
+
             Args:
                 'ground_truth': ground truth
                 'predictions': predictions
-            
+
             Returns: 
                  recall
         """
@@ -100,22 +104,23 @@ class Recall(Metric):
         predictions = array(predictions)
         ground_truth = binarize(ground_truth)
         predictions = binarize(predictions)
-        recall = ((predictions == 1) & (ground_truth == 1)).sum()/(ground_truth.sum()+1e-8)
+        recall = ((predictions == 1) & (ground_truth == 1)).sum() / \
+            (ground_truth.sum()+1e-8)
         return recall
 
 
-@Registry.register_metric    
+@Registry.register_metric
 class F1(Metric):
-    name: str="f1"
-    
-    def compute(self,ground_truth,predictions):
+    name: str = "f1"
+
+    def compute(self, ground_truth, predictions):
         """
             Compute the f1
-            
+
             Args:
                 'ground_truth': ground truth
                 'predictions': predictions
-            
+
             Returns: 
                  f1
         """
@@ -123,6 +128,20 @@ class F1(Metric):
         predictions = array(predictions)
         ground_truth = binarize(ground_truth)
         predictions = binarize(predictions)
-        precision = ((predictions == 1) & (ground_truth == 1)).sum()/(predictions.sum()+1e-8)
-        recall = ((predictions == 1) & (ground_truth == 1)).sum()/(ground_truth.sum()+1e-8)
+        precision = ((predictions == 1) & (ground_truth == 1)
+                     ).sum()/(predictions.sum()+1e-8)
+        recall = ((predictions == 1) & (ground_truth == 1)).sum() / \
+            (ground_truth.sum()+1e-8)
         return 2*recall*precision/(recall+precision)
+
+
+@Registry.register_metric
+class IoU(Metric):
+    name: str = "iou"
+
+    def compute(self, ground_truth, predictions):
+        ground_truth = array(ground_truth, dtype=np.uint8)
+        predictions = array(predictions, dtype=np.uint8)
+        overlap = (ground_truth != 0) & (predictions != 0)  # Logical AND
+        union = (ground_truth != 0) | (predictions != 0)  # Logical OR
+        return overlap.sum() / union.sum()

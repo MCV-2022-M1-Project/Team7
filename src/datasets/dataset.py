@@ -16,6 +16,7 @@ class Sample:
     image: np.ndarray
     annotation: Optional[Tuple[str, str]]
     correspondance: Optional[List[int]]
+    text_boxes: Optional[List[Tuple[int, int, int, int]]]
 
 
 class Dataset:
@@ -31,6 +32,7 @@ class Dataset:
         self.images: List[np.ndarray] = []
         self.annotations: List[Tuple[str, str]] = []
         self.correspondances: List[List[int]] = []
+        self.text_boxes: List[List[Tuple[int, int, int, int]]] = []
 
         corresps_path = os.path.join(path, "gt_corresps.pkl")
 
@@ -38,6 +40,20 @@ class Dataset:
             with open(corresps_path, "rb") as f:
                 self.correspondances = pickle.load(f)
                 assert type(self.correspondances) is list
+
+        text_bb_path = os.path.join(path, "text_boxes.pkl")
+
+        if os.path.exists(text_bb_path):
+            with open(text_bb_path, "rb") as f:
+                text_boxes_samples: List[List[List[np.ndarray]]] = pickle.load(f)
+
+                for text_box_list in text_boxes_samples:
+                    self.text_boxes.append([(
+                        text_box[0][0],
+                        text_box[0][1],
+                        text_box[2][0],
+                        text_box[2][1],
+                    ) for text_box in text_box_list])
 
         for path in mask_paths:
             mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
@@ -78,10 +94,16 @@ class Dataset:
         else:
             corresp = None
 
+        if len(self.text_boxes) > 0:
+            text_bbs = self.text_boxes[id]
+        else:
+            text_bbs = None
+
         return Sample(
             id,
             mask,
             self.images[id],
             annotation,
             corresp,
+            text_bbs,
         )

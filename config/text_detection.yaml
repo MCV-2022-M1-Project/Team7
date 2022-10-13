@@ -1,0 +1,11 @@
+tasks:
+  - name: text_detection
+
+    metrics:
+      - name: iou
+
+    preprocessing:
+      - name: ayan_text_detector
+
+    datasets:
+      - qsd1_w2
