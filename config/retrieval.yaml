@@ -14,7 +14,7 @@ tasks:
     distance:
       name: cosine
       n_neighbors: 20
-      top_k: 10
+      top_k: 1
 
     metrics:
       - name: raw_accuracy
