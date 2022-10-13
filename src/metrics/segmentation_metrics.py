@@ -140,8 +140,32 @@ class IoU(Metric):
     name: str = "iou"
 
     def compute(self, ground_truth, predictions):
-        ground_truth = array(ground_truth, dtype=np.uint8)
-        predictions = array(predictions, dtype=np.uint8)
-        overlap = (ground_truth != 0) & (predictions != 0)  # Logical AND
-        union = (ground_truth != 0) | (predictions != 0)  # Logical OR
-        return overlap.sum() / union.sum()
+        # ground_truth = array(ground_truth, dtype=np.uint8)
+        # predictions = array(predictions, dtype=np.uint8)
+
+        total_iou = []
+
+        for gt, pred in zip(ground_truth, predictions):
+            for pred_text_box in pred:
+                x11, y11, x12, y12 = pred_text_box
+                max_iou = 0.0
+
+                for gt_text_box in gt:
+                    x21, y21, x22, y22 = gt_text_box
+                    xa = max(x11, x21)
+                    ya = max(y11, y21)
+                    xb = min(x12, x22)
+                    yb = min(y12, y22)
+                    intersection = max(xb - xa, 0) * max(yb - ya, 0)
+                    area_a = (x12-x11) * (y12-y11)
+                    area_b = (x22-x21) * (y22-y21)
+                    union = area_a + area_b - intersection
+                    iou = intersection / union
+                    max_iou = max(max_iou, iou)
+
+                total_iou.append(max_iou)
+
+        if len(total_iou) == 0:
+            return 0
+
+        return np.mean(total_iou)

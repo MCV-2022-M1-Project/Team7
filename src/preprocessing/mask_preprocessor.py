@@ -3,6 +3,7 @@ import numpy as np
 from typing import Callable, Dict
 from skimage import filters
 from scipy.ndimage import gaussian_filter
+from src.common.utils import image_resize
 
 from src.preprocessing.base import Preprocessing
 from src.common.registry import Registry
@@ -469,37 +470,6 @@ class PaintThePaintingMaskPreprocessor(Preprocessing):
 
         return new_image
 
-    def image_resize(self, image, width = None, height = None, inter = cv2.INTER_AREA):
-        # initialize the dimensions of the image to be resized and
-        # grab the image size
-        dim = None
-        (h, w) = image.shape[:2]
-
-        # if both the width and height are None, then return the
-        # original image
-        if width is None and height is None:
-            return image
-
-        # check to see if the width is None
-        if width is None:
-            # calculate the ratio of the height and construct the
-            # dimensions
-            r = height / float(h)
-            dim = (int(w * r), height)
-
-        # otherwise, the height is None
-        else:
-            # calculate the ratio of the width and construct the
-            # dimensions
-            r = width / float(w)
-            dim = (width, int(h * r))
-
-        # resize the image
-        resized = cv2.resize(image, dim, interpolation = inter)
-
-        # return the resized image
-        return resized
-
     def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
         '''
 
@@ -596,37 +566,6 @@ class PaintThePaintingAdaptativeMaskPreprocessor(Preprocessing):
 
         return new_image
 
-    def image_resize(self, image, width = None, height = None, inter = cv2.INTER_AREA):
-        # initialize the dimensions of the image to be resized and
-        # grab the image size
-        dim = None
-        (h, w) = image.shape[:2]
-
-        # if both the width and height are None, then return the
-        # original image
-        if width is None and height is None:
-            return image
-
-        # check to see if the width is None
-        if width is None:
-            # calculate the ratio of the height and construct the
-            # dimensions
-            r = height / float(h)
-            dim = (int(w * r), height)
-
-        # otherwise, the height is None
-        else:
-            # calculate the ratio of the width and construct the
-            # dimensions
-            r = width / float(w)
-            dim = (width, int(h * r))
-
-        # resize the image
-        resized = cv2.resize(image, dim, interpolation = inter)
-
-        # return the resized image
-        return resized
-
     def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
         '''
 
@@ -690,7 +629,7 @@ class PaintThePaintingAdaptativeMaskPreprocessor(Preprocessing):
 
         # 1 min 91% F1
         original_shape = image.shape
-        image_resized = self.image_resize(image, 800, 800)
+        image_resized = image_resize(image, 800, 800)
         image_converted = self.color_space(image_resized)
         # Select the channel we are working with from the parameter channel.
         sample_image = image_converted
