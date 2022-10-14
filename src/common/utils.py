@@ -402,3 +402,41 @@ def get_best_textbox_candidate(mask, original_mask):
     x0,y0,x,y = (x - int(ref*M_W/2), y - int(ref*M_H/2), 
             (x+w) + int(ref*M_W/2), (y+h) + int(ref*M_H/2))
     return best_sc, [max(0,x0), max(0,y0), min(x, p_coords[0] + p_shape[0]), min(y, p_coords[1] + p_shape[1])]
+
+def eval_contours(contours, width):
+    if len(contours) == 0: return 0
+    if len(contours) == 1: return 0
+    max_area = []
+    for i in range(len(contours)):
+        area = cv2.contourArea(contours[i])
+        max_area.append(area)
+    
+    max_order = [0]
+    for i in range(1, len(max_area)):
+        for l in range(len(max_order)+1):
+            if l == len(max_order):
+                max_order.append(i)
+                break
+            elif max_area[i] > max_area[max_order[l]]:
+                max_order.insert(l, i)
+                break
+    # Get the moments
+    mu = [None] * len(contours)
+    for i in range(len(contours)):
+        mu[i] = cv2.moments(contours[i])
+    # Get the mass centers
+    mc = [None] * len(contours)
+    for i in range(len(contours)):
+        # add 1e-5 to avoid division by zero
+        mc[i] = (mu[i]['m10'] / (mu[i]['m00'] + 1e-5), mu[i]['m01'] / (mu[i] ['m00'] + 1e-5))
+    
+    CM_order = [0]
+    for i in range(1, len(mc)):
+        for l in range(len(CM_order) + 1):
+            if l == len(CM_order):
+                CM_order.append(i)
+                break
+            elif abs(mc[i][0]-(width/2)) < abs(mc[CM_order[l]][0]-(width/2)):
+                CM_order.insert(l, i)
+                break
+    return CM_order[0]
