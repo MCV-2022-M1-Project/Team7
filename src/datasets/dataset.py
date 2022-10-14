@@ -48,12 +48,15 @@ class Dataset:
                 text_boxes_samples: List[List[List[np.ndarray]]] = pickle.load(f)
 
                 for text_box_list in text_boxes_samples:
-                    self.text_boxes.append([(
-                        text_box[0][0],
-                        text_box[0][1],
-                        text_box[2][0],
-                        text_box[2][1],
-                    ) for text_box in text_box_list])
+                    if type(text_box_list[0]) is list:
+                        self.text_boxes.append(text_box_list)
+                    else:
+                        self.text_boxes.append([(
+                            text_box[0][0],
+                            text_box[0][1],
+                            text_box[2][0],
+                            text_box[2][1],
+                        ) for text_box in text_box_list])
 
         for path in mask_paths:
             mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)

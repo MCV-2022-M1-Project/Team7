@@ -146,12 +146,12 @@ class IoU(Metric):
         total_iou = []
 
         for gt, pred in zip(ground_truth, predictions):
-            for pred_text_box in pred:
-                x11, y11, x12, y12 = pred_text_box
+            for gt_text_box in gt:
+                x11, y11, x12, y12 = gt_text_box
                 max_iou = 0.0
 
-                for gt_text_box in gt:
-                    x21, y21, x22, y22 = gt_text_box
+                for pred_text_box in pred:
+                    x21, y21, x22, y22 = pred_text_box
                     xa = max(x11, x21)
                     ya = max(y11, y21)
                     xb = min(x12, x22)
