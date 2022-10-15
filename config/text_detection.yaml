@@ -5,7 +5,7 @@ tasks:
       - name: iou
 
     preprocessing:
-      - name: ayan_text_detector
+      - name: text_detector_wo_mask
 
     datasets:
       - qsd1_w2
