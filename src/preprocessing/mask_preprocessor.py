@@ -3,8 +3,9 @@ import numpy as np
 from typing import Callable, Dict
 from skimage import filters
 from scipy.ndimage import gaussian_filter
-from src.common.utils import image_resize
+from skimage.morphology import flood_fill
 
+from src.common.utils import image_resize
 from src.preprocessing.base import Preprocessing
 from src.common.registry import Registry
 
@@ -473,24 +474,11 @@ class PaintThePaintingMaskPreprocessor(Preprocessing):
     def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
         '''
 
-        run(**kwargs) takes an image as an imput and process standard deviation of each row and column.
-        Thresholds and operate boolean and for masking.
-
-        Some asumptions made here: 
-            1. Background is on the sides of the image.
-            2. Painting is on the center of the image.
-            3. Background is the least entropic region (lower variance) of the image. In other words: Walls are more boring than paintings.
-            4. Low-entropy in background produces "spike" on histogram, which is characterized by lower variance.
-            5. Photo of the painting isn't tilted. Thus, we can scan it iteratively.
+        run(**kwargs) takes an image as an imput and applies morhpology operators to
+        create the mask.
 
         Args:
-
             Image: Sample image to preprocess
-            Channel: Channel we are scanning
-            Metric: Metric used to calculate the least entropic channel, variance has more predictable behaviour.
-            thr_global: Threshold of minimum variance to be considered as possitive sample.
-            fill_holes: Boolean. Some cases, when painting is composed by sub-paintings it detects the sub-painting level. 
-                        We can solve this in order to adjust to the GT by filling the holes.
 
         Returns:
             Dict: {
@@ -499,8 +487,7 @@ class PaintThePaintingMaskPreprocessor(Preprocessing):
             }
 
         '''
-        original_shape = image.shape
-        # image_resize = self.image_resize(image, 400, 400)
+        # 94% hsv channel=1
         image_converted = self.color_space(image)
         # Select the channel we are working with from the parameter channel.
         sample_image = image_converted
@@ -511,21 +498,19 @@ class PaintThePaintingMaskPreprocessor(Preprocessing):
         thr = filters.threshold_otsu(sample_image)
         mask = (sample_image > thr).astype(np.uint8)
         
-        # mask = (cv2.adaptiveThreshold(sample_image, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-        #                             cv2.THRESH_BINARY, 9, 2) == 0).astype(np.uint8)
-
         kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (12, 1))
         kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 12))
         mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_v, iterations=1)
         mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_h, iterations=1)
-        mask = self.painter(mask)
+        mask_bg = mask.copy()
+        cv2.floodFill(mask_bg, None, (0, 0), 1)
+        mask = mask - mask_bg
         kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (24, 1))
         kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 24))
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_v, iterations=1)
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_h, iterations=1)
 
         mask = (mask == 0).astype(np.uint8)
-        # mask = cv2.resize(mask, (original_shape[1], original_shape[0]))
         returned_image = image
         return {"result": returned_image, "mask":  mask}
 
@@ -568,25 +553,12 @@ class PaintThePaintingAdaptativeMaskPreprocessor(Preprocessing):
 
     def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
         '''
-
-        run(**kwargs) takes an image as an imput and process standard deviation of each row and column.
-        Thresholds and operate boolean and for masking.
-
-        Some asumptions made here: 
-            1. Background is on the sides of the image.
-            2. Painting is on the center of the image.
-            3. Background is the least entropic region (lower variance) of the image. In other words: Walls are more boring than paintings.
-            4. Low-entropy in background produces "spike" on histogram, which is characterized by lower variance.
-            5. Photo of the painting isn't tilted. Thus, we can scan it iteratively.
+        run(**kwargs) takes an image as an imput and applies morhpology operators to
+        create the mask.
 
         Args:
 
             Image: Sample image to preprocess
-            Channel: Channel we are scanning
-            Metric: Metric used to calculate the least entropic channel, variance has more predictable behaviour.
-            thr_global: Threshold of minimum variance to be considered as possitive sample.
-            fill_holes: Boolean. Some cases, when painting is composed by sub-paintings it detects the sub-painting level. 
-                        We can solve this in order to adjust to the GT by filling the holes.
 
         Returns:
             Dict: {
@@ -595,71 +567,168 @@ class PaintThePaintingAdaptativeMaskPreprocessor(Preprocessing):
             }
 
         '''
-        # 93% F1
-        # # original_shape = image.shape
-        # # image = self.image_resize(image, 400, 400)
-        # image_converted = self.color_space(image)
-        # # Select the channel we are working with from the parameter channel.
-        # sample_image = image_converted
-
-        # if len(image_converted.shape) > 2:
-        #     sample_image = sample_image[:, :, self.channel]
-        
-        # mask = cv2.blur(sample_image, (5,5), cv2.BORDER_DEFAULT)
-        # mask = (cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-        #                             cv2.THRESH_BINARY, 11, 2) == 0).astype(np.uint8)
-        # kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 1))
-        # kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 3))
-        # mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_v, iterations=1)
-        # mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_h, iterations=1)
-        # mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_v, iterations=3)
-        # mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_h, iterations=3)
-        # mask = self.painter(mask)
-        # kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (12, 1))
-        # kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 12))
-        # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_v, iterations=12)
-        # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_h, iterations=12)
-        # mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_v, iterations=2)
-        # mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_h, iterations=2)
-
-        # mask = (mask == 0).astype(np.uint8)
-        # # mask = cv2.resize(mask, (original_shape[1], original_shape[0]))
-        # returned_image = image
-        # return {"result": returned_image, "mask":  mask}
-
-        # 1 min 91% F1
-        original_shape = image.shape
-        image_resized = image_resize(image, 800, 800)
-        image_converted = self.color_space(image_resized)
+        # 91% F1
+        # original_shape = image.shape
+        image_converted = self.color_space(image)
         # Select the channel we are working with from the parameter channel.
         sample_image = image_converted
 
         if len(image_converted.shape) > 2:
             sample_image = sample_image[:, :, self.channel]
-
-        dilated_img = cv2.dilate(sample_image, np.ones((5,5), np.uint8))
-        bg_img = cv2.medianBlur(dilated_img, 21)
-        no_shadow_img = 255 - cv2.absdiff(sample_image, bg_img)
-        mask = cv2.normalize(no_shadow_img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
         
-        mask = cv2.blur(sample_image, (5,5), cv2.BORDER_DEFAULT) 
+        mask = cv2.blur(sample_image, (5,5), cv2.BORDER_DEFAULT)
         mask = (cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                    cv2.THRESH_BINARY, 13, 2) == 0).astype(np.uint8)
+                                    cv2.THRESH_BINARY, 11, 2) == 0).astype(np.uint8)
         kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 1))
         kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 3))
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_v, iterations=1)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_h, iterations=1)
         mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_v, iterations=3)
         mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_h, iterations=3)
-        mask = self.painter(mask)
+        mask_bg = mask.copy()
+        cv2.floodFill(mask_bg, None, (0, 0), 1)
+        mask = mask - mask_bg
         kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (12, 1))
         kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 12))
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_v, iterations=8)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_h, iterations=8)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_v, iterations=12)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_h, iterations=12)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_v, iterations=2)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_h, iterations=2)
 
         mask = (mask == 0).astype(np.uint8)
-        mask = cv2.resize(mask, (original_shape[1], original_shape[0]))
         returned_image = image
         return {"result": returned_image, "mask":  mask}
+
+
+@Registry.register_preprocessing
+class FourierMaskPreprocessor(Preprocessing):
+    name: str = "fourier_mask_preprocessor"  
+
+    def __init__(self, color_space: str = "hsv", channel: int = 0, metric: str = "std", thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
+        self.color_space = TO_COLOR_SPACE[color_space]
+        self.channel = channel
+        self.metric = METRICS[metric]
+        self.thr_global = thr_global
+        self.fill_holes = fill_holes
+
+    def painter(self, image):
+        image_bg = image.copy()
+        last_col = image.shape[1] - 1
+
+        for i in range(image.shape[0]):
+            if image[i, 0] == 0:
+                cv2.floodFill(image_bg, None, (i, 0), 1)
+                break
+            if image[i, last_col] == 0:
+                cv2.floodFill(image_bg, None, (i, last_col), 1)
+                break
+
+        new_image = image - image_bg
+        new_image = (new_image == 0).astype(np.uint8)
+        return new_image
+
+    def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
+        '''
+
+        run(**kwargs) takes an image as an imput and filters low frequency values
+        using the fourier transform.
+        Args:
+            Image: Sample image to preprocess
+
+        Returns:
+            Dict: {
+                "ouput": Processed image cropped with mask
+                "mask": mask obtained with method 
+            }
+
+        '''
+        image_converted = self.color_space(image)
+        # Select the channel we are working with from the parameter channel.
+        sample_image = image_converted
+
+        if len(sample_image.shape) > 2:
+            sample_image = sample_image[:, :, self.channel]
+
+        img = sample_image
+        f = np.fft.fft2(img)
+        fshift = np.fft.fftshift(f)
+        magnitude_spectrum = 20*np.log(np.abs(f))
+
+        rows, cols = img.shape
+        crow,ccol = int(rows/2) , int(cols/2)
+        f[crow-1:crow+2, ccol-1:ccol+2] = 0
+        f_ishift = np.fft.ifftshift(fshift)
+        img_back = np.fft.ifft2(f)
+        img_back = 1 - np.real(img_back)
+        img_back = img_back - np.min(img_back)
+        img_back = (img_back / np.max(img_back) * 255).astype(np.uint8)
+        
+        mask = cv2.blur(img_back, (5,5), cv2.BORDER_DEFAULT) 
+
+        # thr = filters.threshold_otsu(mask)
+        # mask = (mask > thr).astype(np.uint8)
+
+        mask = (cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                    cv2.THRESH_BINARY, 7, 2) == 0).astype(np.uint8)
+
+        # mask = (img_back > 200).astype(np.uint8)
+
+        kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 1))
+        kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 3))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_v, iterations=3)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_h, iterations=3)
+
+        mask = self.painter(mask)
+
+        min_area = image.shape[0] * image.shape[1] * 0.05
+        min_x = int(image.shape[0] * 0.1)
+        min_y = int(image.shape[1] * 0.1)
+
+        kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (min_x, 1))
+        kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, min_y))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_v, iterations=1)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_h, iterations=1)
+
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        paintings = []
+
+        for contour in contours:
+            area = cv2.contourArea(contour)
+
+            if area < min_area:
+                continue
+
+            x_min = y_min = np.Inf
+            x_max = y_max = 0
+
+            for coord in contour:
+                y, x = coord[0]
+
+                if x > x_max:
+                    x_max = x
+
+                if x < x_min:
+                    x_min = x
+
+                if y > y_max:
+                    y_max = y
+
+                if y < y_min:
+                    y_min = y
+
+            if x_max - x_min < min_x or y_max - y_min < min_y:
+                continue
+            
+            paintings.append((area, (x_min, y_min, x_max, y_max)))
+
+        paintings = sorted(paintings, key=lambda x: x[0], reverse=True)
+        paintings = paintings[:2]
+        returned_paintings = []
+        final_mask = np.zeros_like(mask, dtype=np.bool8)
+
+        for area, coords in paintings:
+            final_mask[coords[0]:coords[2], coords[1]:coords[3]] = True
+            returned_paintings.append(image[coords[0]:coords[2], coords[1]:coords[3]])
+        
+        return {"result": image.copy(), "mask":  final_mask, "bb": [coords for area, coords in paintings]}
