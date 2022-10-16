@@ -1,3 +1,4 @@
+import itertools
 from typing import Any, Dict, List, Type, Optional
 
 from src.preprocessing.base import Preprocessing
@@ -126,9 +127,39 @@ class Registry:
 
     @classmethod
     def get_metric_instances(cls, metrics_configs: Any) -> List[Metric]:
-        return [
-            cls.get_metric_class(m["name"])() for m in metrics_configs
-        ]
+        metrics = []
+
+        for mc in metrics_configs:
+            m_class = cls.get_metric_class(mc["name"])
+            params_list = []
+            num_params = 0
+
+            for item, val in mc.items():
+                if item == "name":
+                    continue 
+                
+                num_params += 1
+
+                if type(val) is list:
+                    params_list += [(item, v) for v in val]
+                else:
+                    params_list.append((item, val))
+
+            if num_params == 0:
+                metrics.append(m_class())
+                continue
+
+            param_combinations = list(itertools.combinations(params_list, num_params))
+
+            for param_combination in param_combinations:
+                pcd = dict(param_combination)
+
+                if len(pcd) < len(mc) - 1:
+                    continue
+
+                metrics.append(m_class(**pcd))
+
+        return metrics
 
     @classmethod
     def get_datasets(cls) -> Dict[str, Dataset]:

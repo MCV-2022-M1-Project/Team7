@@ -65,7 +65,7 @@ def write_report(path: str, task_config: Any, metrics: Optional[List[MetricWrapp
         content += f"\n\n--- Metrics ---\n"
 
         for metric in metrics:
-            content += f"{metric.metric.name}: {metric.average}\n"
+            content += f"{str(metric.metric)}: {metric.average}\n"
 
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)

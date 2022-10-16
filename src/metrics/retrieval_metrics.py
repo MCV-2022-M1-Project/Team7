@@ -22,6 +22,10 @@ class RawAccuracyMetric(Metric):
 @Registry.register_metric
 class MAP(Metric):
     name: str = "map"
+
+    def __init__(self, top_k: int = 10, *args, **kwargs) -> None:
+        self.top_k = top_k
+        
     
     def apk(self, ground_truth: List[int], predictions: List[int], k: int = 10) -> float:
 
@@ -47,24 +51,34 @@ class MAP(Metric):
         if not ground_truth:
             return 0.0
 
-        score = 0.0
-        num_hits = 0.0
+        score = []
 
-        for preds in predictions:
-            if len(preds) > k:
-                preds = preds[:k]
+        for gt in ground_truth:
+            max_score = 0.0
 
-            for i, p in enumerate(preds):
-                # first condition checks whether it is valid prediction
-                # second condition checks if prediction is not repeated
-                if p in ground_truth and p not in predictions[:i]:
-                    num_hits += 1.0
-                    score += num_hits / (i+1.0)
+            for painting_preds in predictions:
+                new_score = 0.0
+                num_hits = 0.0
 
-        return score / min(len(ground_truth), 10)
+                for i, p in enumerate(painting_preds[:self.top_k]):
+                    # first condition checks whether it is valid prediction
+                    # second condition checks if prediction is not repeated
+                    if p == gt and p not in painting_preds[:i]:
+                        num_hits += 1.0
+                        new_score += num_hits / (i+1.0)
+
+                if new_score > max_score:
+                    max_score = new_score
+
+            score.append(max_score)
+
+        return float(np.mean(score))
 
     def compute(self, ground_truth: List[List[int]], predictions: List[List[List[int]]], k: int = 10) -> float:
         return np.mean([self.apk(a,p,k) for a,p in zip(ground_truth, predictions)])
+
+    def __str__(self) -> str:
+        return f"{self.name}[@{self.top_k}]"
     
 
 @Registry.register_metric

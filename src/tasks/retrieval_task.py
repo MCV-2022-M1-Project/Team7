@@ -54,7 +54,7 @@ class RetrievalTask(BaseTask):
                 image = [image]
 
             feats_pred = self.extractor.run(image, tokenizer=self.tokenizer)["result"]
-            top_k_pred = neighbors.kneighbors(feats_pred, n_neighbors=self.config.distance.top_k, return_distance=False)
+            top_k_pred = neighbors.kneighbors(feats_pred, n_neighbors=self.config.distance.n_neighbors, return_distance=False)
             final_output_w1.append([int(v) for v in top_k_pred[0]])
             final_output_w2.append([[int(v) for v in top_k_pred[i]] for i in range(len(image))])
 
@@ -66,7 +66,7 @@ class RetrievalTask(BaseTask):
             logging.info(f"Printing report and saving to disk.")
 
             for metric in self.metrics:
-                logging.info(f"{metric.metric.name}: {metric.average}")
+                logging.info(f"{str(metric.metric)}: {metric.average}")
 
             write_report(self.report_path, self.config, self.metrics)
         else:
