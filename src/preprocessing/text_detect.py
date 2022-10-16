@@ -5,6 +5,7 @@ import numpy as np
 import pickle as pkl
 import argparse
 import time
+from torchmetrics import RetrievalFallOut
 from tqdm import tqdm
 
 from src.common.registry import Registry
@@ -171,6 +172,8 @@ class AyanTextDetector(Preprocessing):
 @Registry.register_preprocessing
 class TextDetectorWOMask(Preprocessing):
     name: str = "text_detector_wo_mask"
+    def __init__(self, *args, **kwargs) -> None:
+        return None
     def run(self,  image: np.ndarray, blur_size: int = 5, kernel_size =10, kernel_reduction_x = 60, kernel_reduction_y = 4, **kwargs) -> Dict[str, np.ndarray]:
         """
         This function detects the text in the image and returns an array with coordinates of text bbox.
