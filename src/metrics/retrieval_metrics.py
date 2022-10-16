@@ -37,9 +37,6 @@ class MAP(Metric):
             for p, rel in zip(probabilities[:at_k], labels):
                 buffer += (p*rel)/sum(labels) # Beware, labels should be K lenght
         return buffer / k
-
-
-
     
     def apk(self, ground_truth: List[int], predictions: List[int], k: int = 10) -> float:
 
