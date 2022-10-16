@@ -25,7 +25,21 @@ class MAP(Metric):
 
     def __init__(self, top_k: int = 10, *args, **kwargs) -> None:
         self.top_k = top_k
-        
+    
+    def _map(self, probabilities: List[float], labels: List[bool], k: int) -> float:
+
+        """
+        Expects: Probabilities (0, 1)
+        Labels Bool (relevant / not relevant)
+        """
+        buffer = 0
+        for at_k in range(1, k+1):
+            for p, rel in zip(probabilities[:at_k], labels):
+                buffer += (p*rel)/sum(labels) # Beware, labels should be K lenght
+        return buffer / k
+
+
+
     
     def apk(self, ground_truth: List[int], predictions: List[int], k: int = 10) -> float:
 
