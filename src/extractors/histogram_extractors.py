@@ -267,7 +267,7 @@ class PyramidLocalHistogramExtractor(FeaturesExtractor):
 
         return image_feature
 
-    def run(self, images: List[np.ndarray], initial_patches: int = 1, num_pyramid_levels: int = 4, sample: int = 10, *args, **kwargs) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], initial_patches: int = 1, num_pyramid_levels: int = 6, sample: int = 10, *args, **kwargs) -> Dict[str, np.ndarray]:
 
         features = []
 
