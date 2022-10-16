@@ -1,14 +1,12 @@
 import logging
 import os
 import cv2
-from typing import Any
-import numpy as np
+import pickle
 from tqdm import tqdm
 
 
 from src.common.registry import Registry
-from src.common.utils import wrap_metric_classes, write_report
-from src.datasets.dataset import Dataset
+from src.common.utils import write_report
 from src.tasks.base import BaseTask
 
 
@@ -25,6 +23,7 @@ class TextDetectionTask(BaseTask):
         """
         mask_output_dir = os.path.join(self.output_dir, "text_masks")
         os.makedirs(mask_output_dir, exist_ok=True)
+        final_output = []
 
         for sample in tqdm(self.query_dataset, total=self.query_dataset.size()):
             image = sample.image
@@ -52,6 +51,8 @@ class TextDetectionTask(BaseTask):
                 for metric in self.metrics:
                     metric.compute([text_bb], [text_boxes_pred])
 
+            final_output.append(text_boxes_pred)
+
             cv2.imwrite(os.path.join(mask_output_dir,
                         f"{sample.id:05d}.png"), 255*text_mask_pred)
 
@@ -63,3 +64,6 @@ class TextDetectionTask(BaseTask):
             write_report(self.report_path, self.config, self.metrics)
         else:
             write_report(self.report_path, self.config)
+
+        with open(os.path.join(self.output_dir, "result.pkl"), 'wb') as f:
+            pickle.dump(final_output, f)

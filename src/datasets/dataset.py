@@ -48,7 +48,7 @@ class Dataset:
                 text_boxes_samples: List[List[List[np.ndarray]]] = pickle.load(f)
 
                 for text_box_list in text_boxes_samples:
-                    if type(text_box_list[0]) is list:
+                    if len(text_box_list[0]) > 2:
                         self.text_boxes.append(text_box_list)
                     else:
                         self.text_boxes.append([(

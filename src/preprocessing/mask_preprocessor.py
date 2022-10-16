@@ -446,31 +446,6 @@ class PaintThePaintingMaskPreprocessor(Preprocessing):
         self.color_space = TO_COLOR_SPACE[color_space]
         self.channel = channel
 
-    def painter(self, image):
-        new_image = np.zeros_like(image, dtype=np.uint8)
-        opened = np.zeros_like(image)
-        m, n = image.shape
-        queue = [(0,0)]
-
-        while len(queue) > 0:
-            x, y = queue.pop()
-            new_image[x, y] = 1
-            
-            if x+1 < m and image[x+1,y] == 0 and opened[x+1,y] == 0:
-                opened[x+1,y] = 1
-                queue.append((x+1,y))
-            if x-1 >= 0 and image[x-1,y] == 0 and opened[x-1,y] == 0:
-                opened[x-1,y] = 1
-                queue.append((x-1,y))
-            if y+1 < n and image[x,y+1] == 0 and opened[x,y+1] == 0:
-                opened[x,y+1] = 1
-                queue.append((x,y+1))
-            if y-1 >= 0 and image[x,y-1] == 0 and opened[x,y-1] == 0:
-                opened[x,y-1] = 1
-                queue.append((x,y-1))
-
-        return new_image
-
     def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
         '''
 
@@ -511,8 +486,30 @@ class PaintThePaintingMaskPreprocessor(Preprocessing):
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_h, iterations=1)
 
         mask = (mask == 0).astype(np.uint8)
-        returned_image = image
-        return {"result": returned_image, "mask":  mask}
+
+        min_area = image.shape[0] * image.shape[1] * 0.05
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        paintings = []
+
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            box =  cv2.boundingRect(contour)
+            y_min, x_min, h, w = box
+            x_max, y_max = x_min+w, y_min+h 
+
+            if area < min_area:
+                continue
+            
+            paintings.append((area, (x_min, y_min, x_max, y_max)))
+
+        paintings = sorted(paintings, key=lambda x: x[0], reverse=True)
+        paintings = paintings[:2]
+        final_mask = np.zeros_like(mask, dtype=np.bool8)
+
+        for area, coords in paintings:
+            final_mask[coords[0]:coords[2], coords[1]:coords[3]] = True
+        
+        return {"result": image.copy(), "mask":  final_mask, "bb": [coords for _, coords in paintings]}
 
 
 @Registry.register_preprocessing
@@ -525,31 +522,6 @@ class PaintThePaintingAdaptativeMaskPreprocessor(Preprocessing):
         self.metric = METRICS[metric]
         self.thr_global = thr_global
         self.fill_holes = fill_holes
-
-    def painter(self, image):
-        new_image = np.zeros_like(image, dtype=np.uint8)
-        opened = np.zeros_like(image)
-        m, n = image.shape
-        queue = [(0,0)]
-
-        while len(queue) > 0:
-            x, y = queue.pop()
-            new_image[x, y] = 1
-            
-            if x+1 < m and image[x+1,y] == 0 and opened[x+1,y] == 0:
-                opened[x+1,y] = 1
-                queue.append((x+1,y))
-            if x-1 >= 0 and image[x-1,y] == 0 and opened[x-1,y] == 0:
-                opened[x-1,y] = 1
-                queue.append((x-1,y))
-            if y+1 < n and image[x,y+1] == 0 and opened[x,y+1] == 0:
-                opened[x,y+1] = 1
-                queue.append((x,y+1))
-            if y-1 >= 0 and image[x,y-1] == 0 and opened[x,y-1] == 0:
-                opened[x,y-1] = 1
-                queue.append((x,y-1))
-
-        return new_image
 
     def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
         '''
@@ -596,8 +568,30 @@ class PaintThePaintingAdaptativeMaskPreprocessor(Preprocessing):
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_h, iterations=2)
 
         mask = (mask == 0).astype(np.uint8)
-        returned_image = image
-        return {"result": returned_image, "mask":  mask}
+        
+        min_area = image.shape[0] * image.shape[1] * 0.05
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        paintings = []
+
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            box =  cv2.boundingRect(contour)
+            y_min, x_min, h, w = box
+            x_max, y_max = x_min+w, y_min+h 
+
+            if area < min_area:
+                continue
+            
+            paintings.append((area, (x_min, y_min, x_max, y_max)))
+
+        paintings = sorted(paintings, key=lambda x: x[0], reverse=True)
+        paintings = paintings[:2]
+        final_mask = np.zeros_like(mask, dtype=np.bool8)
+
+        for area, coords in paintings:
+            final_mask[coords[0]:coords[2], coords[1]:coords[3]] = True
+        
+        return {"result": image.copy(), "mask":  final_mask, "bb": [coords for _, coords in paintings]}
 
 
 @Registry.register_preprocessing
@@ -617,10 +611,10 @@ class FourierMaskPreprocessor(Preprocessing):
 
         for i in range(image.shape[0]):
             if image[i, 0] == 0:
-                cv2.floodFill(image_bg, None, (i, 0), 1)
+                cv2.floodFill(image_bg, None, (0, i), 1)
                 break
             if image[i, last_col] == 0:
-                cv2.floodFill(image_bg, None, (i, last_col), 1)
+                cv2.floodFill(image_bg, None, (last_col, i), 1)
                 break
 
         new_image = image - image_bg

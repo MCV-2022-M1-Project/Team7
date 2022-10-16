@@ -37,10 +37,17 @@ class RetrievalTask(BaseTask):
 
         for sample in tqdm(self.query_dataset, total=self.query_dataset.size()):
             image = sample.image
+            images_list = []
 
             for pp in self.preprocessing:
                 output = pp.run(image)
                 image = output["result"]
+
+                if "mask" in output:
+                    image = (image * output["mask"][:,:,None]).astype(np.uint8)
+
+                if "text_mask" in output:
+                    image = (image * (1-(output["text_mask"][:,:,None] / 255))).astype(np.uint8)
 
                 if "bb" in output:
                     images_list = []
@@ -48,8 +55,8 @@ class RetrievalTask(BaseTask):
                     for bb in output["bb"]:
                         images_list.append(image[bb[0]:bb[2], bb[1]:bb[3]])
 
-                    if len(images_list) > 0:
-                        image = images_list
+            if len(images_list) > 0:
+                image = images_list
 
             if type(image) is not list:
                 image = [image]
