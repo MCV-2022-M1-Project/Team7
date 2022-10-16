@@ -699,7 +699,7 @@ class FourierMaskPreprocessor(Preprocessing):
             x_min, y_min, w, h = box
             x_max, y_max = x_min+w, y_min+h 
 
-            if area < min_area:
+            if (area < min_area) or (x_max - w < min_x) or (y_max - h < min_y):
                 continue
             
             paintings.append((area, (x_min, y_min, x_max, y_max)))
