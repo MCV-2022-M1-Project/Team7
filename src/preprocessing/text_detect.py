@@ -171,7 +171,7 @@ class AyanTextDetector(Preprocessing):
 @Registry.register_preprocessing
 class TextDetectorWOMask(Preprocessing):
     name: str = "text_detector_wo_mask"
-    def run(self,  image: np.ndarray, **kwargs) -> Dict[str, np.ndarray]:
+    def run(self,  image: np.ndarray, blur_size: int = 5, kernel_size =10, kernel_reduction_x = 60, kernel_reduction_y = 4, **kwargs) -> Dict[str, np.ndarray]:
         """
         This function detects the text in the image and returns an array with coordinates of text bbox.
         
@@ -186,8 +186,8 @@ class TextDetectorWOMask(Preprocessing):
         #TextDetection.find_regions(img)
         
         # Open morphological transformation using a square kernel with dimensions 10x10
-        kernel = np.ones((10, 10), np.uint8)
-        s= cv2.GaussianBlur(s, (5, 5), 0)
+        kernel = np.ones((kernel_size, kernel_size), np.uint8)
+        s= cv2.GaussianBlur(s, (blur_size, blur_size), 0)
         # kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (10, 10))
         morph_open = cv2.morphologyEx(s, cv2.MORPH_OPEN, kernel)
         # Convert the image to binary
@@ -195,7 +195,7 @@ class TextDetectorWOMask(Preprocessing):
         
         # Open and close morphological transformation using a rectangle kernel relative to the shape of the image
         shape = image.shape
-        kernel = np.ones((shape[0] // 60, shape[1] // 4), np.uint8)
+        kernel = np.ones((shape[0] // kernel_reduction_x, shape[1] // kernel_reduction_y), np.uint8)
         th2 = cv2.morphologyEx(th1, cv2.MORPH_OPEN, kernel)
         #th3 = cv2.morphologyEx(th2, cv2.MORPH_CLOSE, kernel)
         
