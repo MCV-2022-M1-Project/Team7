@@ -36,6 +36,9 @@ class TextDetectionTask(BaseTask):
                 output = pp.run(image)
                 image = output["result"]
 
+                if "mask" in output:
+                    image = image * output["mask"]
+
                 if "text_mask" in output:
                     text_mask_pred = output["text_mask"]
 

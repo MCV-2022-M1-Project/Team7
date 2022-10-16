@@ -18,7 +18,7 @@ def __parse_args() -> argparse.Namespace:
                         help='location of the retrieval dataset')
     parser.add_argument('--output_dir', type=str, default='./output',
                         help='location of the output')
-    parser.add_argument('--config', type=str, default='./config/masking.yaml',
+    parser.add_argument('--config', type=str, default='./config/text_detection.yaml',
                         help='location of the configuration file')
     parser.add_argument('--inference_only', action="store_true",
                         help='run inference and skip metrics computation')
@@ -36,6 +36,7 @@ def main(args: argparse.Namespace):
 
     logging.info("Loading retrieval dataset...")
     retrieval_dataset = Dataset(args.retrieval_ds_dir, name="retrieval")
+    # retrieval_dataset = None
     logging.info("Retrieval dataset loaded.")        
 
     for task_config in config.tasks:

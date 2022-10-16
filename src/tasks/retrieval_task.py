@@ -30,25 +30,33 @@ class RetrievalTask(BaseTask):
         feats_retrieval = self.extractor.run(self.retrieval_dataset.images, tokenizer=self.tokenizer)["result"]
         neighbors = NearestNeighbors(n_neighbors=self.config.distance.n_neighbors, metric=self.config.distance.name)
         neighbors.fit(feats_retrieval)
-        final_output=[]
+        final_output_w1=[]
+        final_output_w2=[]
         
         logging.info("Carrying out the task...")
 
         for sample in tqdm(self.query_dataset, total=self.query_dataset.size()):
             image = sample.image
-            mask_pred = None
 
             for pp in self.preprocessing:
                 output = pp.run(image)
                 image = output["result"]
 
-                if "mask" in output:
-                    mask_pred = output["mask"]
-                    image = (image * np.expand_dims(mask_pred, axis=-1)).astype(np.uint8)
+                if "bb" in output:
+                    images_list = []
 
-            feats_pred = self.extractor.run([image], tokenizer=self.tokenizer)["result"]
-            top_k_pred = neighbors.kneighbors(feats_pred, n_neighbors=self.config.distance.top_k, return_distance=False)[0]
-            final_output.append([int(v) for v in top_k_pred])
+                    for bb in output["bb"]:
+                        images_list.append(image[bb[0]:bb[2], bb[1]:bb[3]])
+
+                    image = images_list
+
+            if type(image) is not list:
+                image = [image]
+
+            feats_pred = self.extractor.run(image, tokenizer=self.tokenizer)["result"]
+            top_k_pred = neighbors.kneighbors(feats_pred, n_neighbors=self.config.distance.top_k, return_distance=False)
+            final_output_w1.append([int(v) for v in top_k_pred[0]])
+            final_output_w2.append([[int(v) for v in top_k_pred[i]] for i in range(len(image))])
 
             if not inference_only:
                 for metric in self.metrics:
@@ -64,5 +72,8 @@ class RetrievalTask(BaseTask):
         else:
             write_report(self.report_path, self.config)
         
-        with open(os.path.join(self.output_dir, "result.pkl"), 'wb') as f:
-            pickle.dump(final_output, f)
+        with open(os.path.join(self.output_dir, "result_w1.pkl"), 'wb') as f:
+            pickle.dump(final_output_w1, f)
+        
+        with open(os.path.join(self.output_dir, "result_w2.pkl"), 'wb') as f:
+            pickle.dump(final_output_w2, f)

@@ -8,12 +8,13 @@ from src.metrics.base import Metric
 class RawAccuracyMetric(Metric):
     name: str = "raw_accuracy"
     
-    def compute(self, ground_truth: List[List[int]], predictions: List[List[int]]) -> float:
+    def compute(self, ground_truth: List[List[int]], predictions: List[List[List[int]]]) -> float:
         val = 0.0
 
-        for i, gt in enumerate(ground_truth):
-            if gt[0] == predictions[i][0]:
-                val += 1.0
+        for preds, gts in zip(predictions, ground_truth):
+            for painting in preds:
+                if painting[0] in gts:
+                    val += 1.0
 
         return val / len(ground_truth)
 
@@ -46,22 +47,23 @@ class MAP(Metric):
         if not ground_truth:
             return 0.0
 
-        if len(predictions) > k:
-            predictions = predictions[:k]
-
         score = 0.0
         num_hits = 0.0
 
-        for i,p in enumerate(predictions):
-            # first condition checks whether it is valid prediction
-            # second condition checks if prediction is not repeated
-            if p in ground_truth and p not in predictions[:i]:
-                num_hits += 1.0
-                score += num_hits / (i+1.0)
+        for preds in predictions:
+            if len(preds) > k:
+                preds = preds[:k]
+
+            for i, p in enumerate(preds):
+                # first condition checks whether it is valid prediction
+                # second condition checks if prediction is not repeated
+                if p in ground_truth and p not in predictions[:i]:
+                    num_hits += 1.0
+                    score += num_hits / (i+1.0)
 
         return score / min(len(ground_truth), 10)
 
-    def compute(self, ground_truth: List[List[int]], predictions: List[List[int]], k: int = 10) -> float:
+    def compute(self, ground_truth: List[List[int]], predictions: List[List[List[int]]], k: int = 10) -> float:
         return np.mean([self.apk(a,p,k) for a,p in zip(ground_truth, predictions)])
     
 

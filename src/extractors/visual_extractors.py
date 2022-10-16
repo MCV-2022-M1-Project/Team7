@@ -95,7 +95,7 @@ class VisualCodebookExtractor(FeaturesExtractor):
 class RandomFeaturesExtractor(FeaturesExtractor):
     name: str = "random_features_extractor"
 
-    def run(self, images: List[np.ndarray],) -> Dict[str, np.ndarray]:
+    def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         """
         Gets a bunch of random list of numbers so we have a baseline on defininng where's the minimum of the function.
         # TODO: Explain this better

@@ -724,11 +724,9 @@ class FourierMaskPreprocessor(Preprocessing):
 
         paintings = sorted(paintings, key=lambda x: x[0], reverse=True)
         paintings = paintings[:2]
-        returned_paintings = []
         final_mask = np.zeros_like(mask, dtype=np.bool8)
 
         for area, coords in paintings:
             final_mask[coords[0]:coords[2], coords[1]:coords[3]] = True
-            returned_paintings.append(image[coords[0]:coords[2], coords[1]:coords[3]])
         
-        return {"result": image.copy(), "mask":  final_mask, "bb": [coords for area, coords in paintings]}
+        return {"result": image.copy(), "mask":  final_mask, "bb": [coords for _, coords in paintings]}
