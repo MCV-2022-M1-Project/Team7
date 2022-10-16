@@ -591,7 +591,9 @@ class PaintThePaintingAdaptativeMaskPreprocessor(Preprocessing):
         for area, coords in paintings:
             final_mask[coords[0]:coords[2], coords[1]:coords[3]] = True
         
-        return {"result": image.copy(), "mask":  final_mask, "bb": [coords for _, coords in paintings]}
+        painting_bbs = [coords for _, coords in paintings]
+        painting_bbs = sorted(painting_bbs, key=lambda x: x[1])
+        return {"result": image.copy(), "mask":  final_mask, "bb": painting_bbs}
 
 
 @Registry.register_preprocessing
@@ -705,4 +707,6 @@ class FourierMaskPreprocessor(Preprocessing):
         for area, coords in paintings:
             final_mask[coords[0]:coords[2], coords[1]:coords[3]] = True
         
-        return {"result": image.copy(), "mask":  final_mask, "bb": [coords for _, coords in paintings]}
+        painting_bbs = [coords for _, coords in paintings]
+        painting_bbs = sorted(painting_bbs, key=lambda x: x[1])
+        return {"result": image.copy(), "mask":  final_mask, "bb": painting_bbs}
