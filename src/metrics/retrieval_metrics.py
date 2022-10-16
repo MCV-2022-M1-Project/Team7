@@ -26,19 +26,7 @@ class MAP(Metric):
     def __init__(self, top_k: int = 10, *args, **kwargs) -> None:
         self.top_k = top_k
     
-    def _map(self, probabilities: List[float], labels: List[bool], k: int) -> float:
-
-        """
-        Expects: Probabilities (0, 1)
-        Labels Bool (relevant / not relevant)
-        """
-        buffer = 0
-        for at_k in range(1, k+1):
-            for p, rel in zip(probabilities[:at_k], labels):
-                buffer += (p*rel)/sum(labels) # Beware, labels should be K lenght
-        return buffer / k
-    
-    def apk(self, ground_truth: List[int], predictions: List[int], k: int = 10) -> float:
+    def apk(self, ground_truth: int, predictions: List[int]) -> float:
 
         """
         Computes the average precision at k.
@@ -62,31 +50,25 @@ class MAP(Metric):
         if not ground_truth:
             return 0.0
 
-        score = []
+        if len(predictions) > self.top_k:
+            predictions = predictions[:self.top_k]
 
-        for gt in ground_truth:
-            max_score = 0.0
+        score = 0.0
+        num_hits = 0.0
+        relevant_docs = 0
 
-            for painting_preds in predictions:
-                new_score = 0.0
-                num_hits = 0.0
+        for i,p in enumerate(predictions):
+            # first condition checks whether it is valid prediction
+            # second condition checks if prediction is not repeated
+            if p == ground_truth and p not in predictions[:i]:
+                num_hits += 1.0
+                relevant_docs += 1
+                score += num_hits / (i+1.0)
 
-                for i, p in enumerate(painting_preds[:self.top_k]):
-                    # first condition checks whether it is valid prediction
-                    # second condition checks if prediction is not repeated
-                    if p == gt and p not in painting_preds[:i]:
-                        num_hits += 1.0
-                        new_score += num_hits / (i+1.0)
+        return score # / min(len(ground_truth), 10)
 
-                if new_score > max_score:
-                    max_score = new_score
-
-            score.append(max_score)
-
-        return float(np.mean(score))
-
-    def compute(self, ground_truth: List[List[int]], predictions: List[List[List[int]]], k: int = 10) -> float:
-        return np.mean([self.apk(a,p,k) for a,p in zip(ground_truth, predictions)])
+    def compute(self, ground_truth: List[int], predictions: List[List[int]]) -> float:
+        return np.mean([self.apk(a,p) for a,p in zip(ground_truth, predictions)])
 
     def __str__(self) -> str:
         return f"{self.name}[@{self.top_k}]"

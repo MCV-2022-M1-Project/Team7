@@ -48,7 +48,8 @@ class RetrievalTask(BaseTask):
                     for bb in output["bb"]:
                         images_list.append(image[bb[0]:bb[2], bb[1]:bb[3]])
 
-                    image = images_list
+                    if len(images_list) > 0:
+                        image = images_list
 
             if type(image) is not list:
                 image = [image]
@@ -60,7 +61,7 @@ class RetrievalTask(BaseTask):
 
             if not inference_only:
                 for metric in self.metrics:
-                    metric.compute([sample.correspondance], [top_k_pred])
+                    metric.compute(sample.correspondance, top_k_pred)
 
         if not inference_only:
             logging.info(f"Printing report and saving to disk.")
