@@ -695,29 +695,11 @@ class FourierMaskPreprocessor(Preprocessing):
 
         for contour in contours:
             area = cv2.contourArea(contour)
+            box =  cv2.boundingRect(contour)
+            x_min, y_min, w, h = box
+            x_max, y_max = x_min+w, y_min+h 
 
             if area < min_area:
-                continue
-
-            x_min = y_min = np.Inf
-            x_max = y_max = 0
-
-            for coord in contour:
-                y, x = coord[0]
-
-                if x > x_max:
-                    x_max = x
-
-                if x < x_min:
-                    x_min = x
-
-                if y > y_max:
-                    y_max = y
-
-                if y < y_min:
-                    y_min = y
-
-            if x_max - x_min < min_x or y_max - y_min < min_y:
                 continue
             
             paintings.append((area, (x_min, y_min, x_max, y_max)))
