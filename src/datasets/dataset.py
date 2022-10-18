@@ -20,7 +20,7 @@ class Sample:
 
 
 class Dataset:
-    def __init__(self, path: str, name: str = "default", preload: bool = False) -> None:
+    def __init__(self, path: str, name: str = "default", preload: bool = True) -> None:
         self.name = name
         mask_paths = sorted(glob(os.path.join(path, "*.png")))
         image_paths = sorted(glob(os.path.join(path, "*.jpg")))
