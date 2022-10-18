@@ -16,6 +16,8 @@ def __parse_args() -> argparse.Namespace:
                         help='location of the datasets')
     parser.add_argument('--retrieval_ds_dir', type=str, default='./datasets/museum',
                         help='location of the retrieval dataset')
+    parser.add_argument('--preload_retrieval_ds', type=bool, default=False,
+                        help='whether to preload retrieval images in memory (takes some time)')
     parser.add_argument('--output_dir', type=str, default='./output',
                         help='location of the output')
     parser.add_argument('--config', type=str, default='./config/text_detection.yaml',
@@ -35,8 +37,7 @@ def main(args: argparse.Namespace):
     Registry.register("output_dir", args.output_dir)
 
     logging.info("Loading retrieval dataset...")
-    retrieval_dataset = Dataset(args.retrieval_ds_dir, name="retrieval")
-    # retrieval_dataset = None
+    retrieval_dataset = Dataset(args.retrieval_ds_dir, name="retrieval", preload=args.preload_retrieval_ds)
     logging.info("Retrieval dataset loaded.")        
 
     for task_config in config.tasks:

@@ -647,13 +647,9 @@ class FourierMaskPreprocessor(Preprocessing):
 
         img = sample_image
         f = np.fft.fft2(img)
-        fshift = np.fft.fftshift(f)
-        magnitude_spectrum = 20*np.log(np.abs(f))
-
         rows, cols = img.shape
         crow,ccol = int(rows/2) , int(cols/2)
         f[crow-1:crow+2, ccol-1:ccol+2] = 0
-        f_ishift = np.fft.ifftshift(fshift)
         img_back = np.fft.ifft2(f)
         img_back = 1 - np.real(img_back)
         img_back = img_back - np.min(img_back)

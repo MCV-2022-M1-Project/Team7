@@ -1,12 +1,6 @@
-from typing import Dict, List
+from typing import Dict
 import cv2
-import os
 import numpy as np
-import pickle as pkl
-import argparse
-import time
-from torchmetrics import RetrievalFallOut
-from tqdm import tqdm
 
 from src.common.registry import Registry
 from src.common.utils import *
@@ -122,7 +116,7 @@ class MorphTextDetector(Preprocessing):
         y_scaling = original_shape[1] / image_resized.shape[1]
         text_bbs = [(x_min * x_scaling, y_min * y_scaling, x_max * x_scaling, y_max * y_scaling) for x_min, y_min, x_max, y_max in text_blobs]
         mask = cv2.resize(mask, (original_shape[1], original_shape[0]))
-        return {"result": image.copy(), "text_mask": mask, "text_bb": text_bbs}
+        return {"result": image.copy(), "text_mask": mask, "text_bb": text_bbs, "text": "not_recognized"}
 
 
 @Registry.register_preprocessing
@@ -167,7 +161,7 @@ class AyanTextDetector(Preprocessing):
                 bbox = bbox_dr
             bboxes.append(bbox)
         gen_mask = generate_text_mask(orig_img.shape[:2],bboxes)
-        return {"result": image.copy(), "text_mask": gen_mask, "text_bb": bboxes}
+        return {"result": image.copy(), "text_mask": gen_mask, "text_bb": bboxes, "text": "not_recognized"}
     
 @Registry.register_preprocessing
 class TextDetectorWOMask(Preprocessing):
@@ -237,6 +231,6 @@ class TextDetectorWOMask(Preprocessing):
             #plt.show()
         final_output=[]
         final_output.append([int(v) for v in coordinates])
-        return {"result": image.copy(), "text_mask": mask, "text_bb": final_output}
+        return {"result": image.copy(), "text_mask": mask, "text_bb": final_output, "text": "not_recognized"}
 
         

@@ -3,17 +3,20 @@ import os
 from glob import glob
 
 
+FOLDER = "./output/qst2_method2"
+
+
 def main():
-    pickle_files = sorted(glob(os.path.join("./output/", "*.pkl")))
+    pickle_files = sorted(glob(os.path.join(FOLDER, "result.pkl")))
 
     for pf in pickle_files:
         basename = os.path.basename(pf)
 
         with open(pf, "rb") as f:     
              po = pickle.load(f)
-             fixed_po = [[int(v) for v in l] for l in po]
+             fixed_po = [[[int(v) for v in l[:10]] for l in s] for s in po]
             
-        with open(f"./output/{basename}_fixed.pkl", "wb") as f:
+        with open(f"{FOLDER}/fixed_{basename}", "wb") as f:
             pickle.dump(fixed_po, f)
 
 

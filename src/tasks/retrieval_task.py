@@ -24,10 +24,10 @@ class RetrievalTask(BaseTask):
         """
         if self.tokenizer is not None:
             logging.info("Building tokenizer vocabulary...")
-            self.tokenizer.fit(self.query_dataset.images)
+            self.tokenizer.fit(self.query_dataset.__images)
 
         logging.info("Extracting retrieval dataset features...")
-        feats_retrieval = self.extractor.run(self.retrieval_dataset.images, tokenizer=self.tokenizer)["result"]
+        feats_retrieval = self.extractor.run(self.retrieval_dataset.__images, tokenizer=self.tokenizer)["result"]
         neighbors = NearestNeighbors(n_neighbors=self.config.distance.n_neighbors, metric=self.config.distance.name)
         neighbors.fit(feats_retrieval)
         final_output_w1=[]
@@ -35,7 +35,7 @@ class RetrievalTask(BaseTask):
         
         logging.info("Carrying out the task...")
 
-        for sample in tqdm(self.query_dataset, total=self.query_dataset.size()):
+        for sample in tqdm(self.query_dataset):
             image = sample.image
             images_list = []
 
@@ -63,8 +63,8 @@ class RetrievalTask(BaseTask):
 
             feats_pred = self.extractor.run(image, tokenizer=self.tokenizer)["result"]
             top_k_pred = neighbors.kneighbors(feats_pred, n_neighbors=self.config.distance.n_neighbors, return_distance=False)
-            final_output_w1.append([int(v) for v in top_k_pred[0]])
-            final_output_w2.append([[int(v) for v in top_k_pred[i]] for i in range(len(image))])
+            final_output_w1.append([int(v) for v in top_k_pred[0][:10]])
+            final_output_w2.append([[int(v) for v in top_k_pred[i][:10]] for i in range(len(image))])
 
             if not inference_only:
                 for metric in self.metrics:

@@ -26,7 +26,7 @@ class MaskingTask(BaseTask):
         mask_output_dir = os.path.join(self.output_dir, "masks")
         os.makedirs(mask_output_dir, exist_ok=True)
 
-        for sample in tqdm(self.query_dataset, total=self.query_dataset.size()):
+        for sample in tqdm(self.query_dataset):
             image = sample.image
             mask_gt = sample.mask
             mask_pred = None
