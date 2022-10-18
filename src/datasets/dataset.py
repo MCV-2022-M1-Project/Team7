@@ -93,26 +93,24 @@ class Dataset:
 
     def __load_images(self):
         for i, path in enumerate(self.__image_paths):
-            image = cv2.imread(path, cv2.IMREAD_COLOR)
-            self.__images[i] = image
+            if self.__images[i] is None:
+                image = cv2.imread(path, cv2.IMREAD_COLOR)
+                self.__images[i] = image
 
     def __load_masks(self):
         for i, path in enumerate(self.__mask_paths):
-            mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-            self.__masks[i] = mask
+            if self.__masks[i] is None:
+                mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+                self.__masks[i] = mask
 
     @property
     def images(self):
-        if len(self.__images) == 0:
-            self.__load_images()
-        
+        self.__load_images()
         return self.__images
 
     @property
     def masks(self):
-        if len(self.__masks) == 0:
-            self.__load_masks()
-        
+        self.__load_masks()
         return self.__masks
 
     def __len__(self) -> int:
