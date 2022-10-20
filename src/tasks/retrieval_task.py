@@ -24,10 +24,10 @@ class RetrievalTask(BaseTask):
         """
         if self.tokenizer is not None:
             logging.info("Building tokenizer vocabulary...")
-            self.tokenizer.fit(self.query_dataset.__images)
+            self.tokenizer.fit(self.query_dataset.images)
 
         logging.info("Extracting retrieval dataset features...")
-        feats_retrieval = self.extractor.run(self.retrieval_dataset.__images, tokenizer=self.tokenizer)["result"]
+        feats_retrieval = self.extractor.run(self.retrieval_dataset.images, tokenizer=self.tokenizer)["result"]
         neighbors = NearestNeighbors(n_neighbors=self.config.distance.n_neighbors, metric=self.config.distance.name)
         neighbors.fit(feats_retrieval)
         final_output_w1=[]

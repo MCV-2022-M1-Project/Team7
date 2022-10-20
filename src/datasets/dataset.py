@@ -104,12 +104,12 @@ class Dataset:
                 self.__masks[i] = mask
 
     @property
-    def images(self):
+    def images(self) -> List[np.ndarray]:
         self.__load_images()
         return self.__images
 
     @property
-    def masks(self):
+    def masks(self) -> List[np.ndarray]:
         self.__load_masks()
         return self.__masks
 
