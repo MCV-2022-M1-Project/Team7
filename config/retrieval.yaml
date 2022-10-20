@@ -7,7 +7,7 @@ tasks:
     #    num_words: 32
 
     features_extractor: 
-      name: 3d_histogram_extractor
+      name: zernike_extractor
       # n_patches: 10
       # channel: 0
 

@@ -251,8 +251,8 @@ class WeightedLocalHistogramExtractor(FeaturesExtractor):
         for image in images:
             image_hsv = tohsv(image)
 
-            k_size_i = image_hsv.shape[0] // n_patches
-            k_size_j = image_hsv.shape[1] // n_patches
+            k_size_i = image_hsv.shape[0] // self.n_patches
+            k_size_j = image_hsv.shape[1] // self.n_patches
 
             for i_step in range(0, image_hsv.shape[0] - image_hsv.shape[0] % self.n_patches, k_size_i):
                 for j_step in range(0, image_hsv.shape[1] - image_hsv.shape[1] % self.n_patches, k_size_j):
@@ -302,10 +302,10 @@ class PyramidLocalHistogramExtractor(FeaturesExtractor):
         for image in images:
             image = skcolor.rgb2lab(image)
             local_hists = []
-            for level in range(1, num_pyramid_levels+1):
+            for level in range(1, self.num_pyramid_levels+1):
                 for channel in range(3):
                     local_hists.append(self.extract_patches(
-                        image, initial_patches * level, channel, sample))
+                        image, self.initial_patches * level, channel, self.sample))
             features.append(np.concatenate(local_hists))
 
         return {
