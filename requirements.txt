@@ -10,3 +10,4 @@ pyyaml
 matplotlib
 tqdm
 sympy
+mahotas
