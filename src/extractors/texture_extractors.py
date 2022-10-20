@@ -25,11 +25,12 @@ class HistogramOrientedGradientsExtractor(FeaturesExtractor):
 @Registry.register_features_extractor
 class ZernikeExtractor(FeaturesExtractor):
     name: str = 'zernike_extractor'
-    def __init__(self, radius: int = 10, degree = 12, *args, **kwargs) -> None:
+    def __init__(self, radius: int = 10, degree = 12, channel: int = 1, *args, **kwargs) -> None:
         self.radius = radius
         self.degree = degree
+        self.channel = channel
     
     def run(self, images: List[np.array], **kwargs) -> Dict:
         return {
-            'result': [mahotas.features.zernike(image, self.degree, self.radius) for image in images]
+            'result': [mahotas.features.zernike_moments(image[:, :, self.channel], self.radius, self.degree) for image in images]
         }
