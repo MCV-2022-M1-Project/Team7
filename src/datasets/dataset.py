@@ -123,7 +123,7 @@ class Dataset:
         return (self.__getitem__(id) for id in range(len(self)))
 
     def __getitem__(self, id: int) -> Sample:
-        if len(self.__masks) > 0:
+        if len(self.__mask_paths) > 0:
             mask = self.__load_mask(id)
         else:
             mask = None

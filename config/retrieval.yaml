@@ -14,11 +14,10 @@ tasks:
     distance:
       name: cosine
       n_neighbors: 20
-      top_k: 10
 
     metrics:
-      - name: raw_accuracy
       - name: map
+        top_k: [1, 5, 10]
 
     #preprocessing:
     #  - name: local_variance_mask_preprocessor
