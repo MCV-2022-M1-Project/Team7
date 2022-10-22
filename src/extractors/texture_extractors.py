@@ -1,4 +1,3 @@
-from this import d
 from typing import Dict, List
 import numpy as np
 import cv2
@@ -11,15 +10,18 @@ from src.extractors.base import FeaturesExtractor
 class HistogramOrientedGradientsExtractor(FeaturesExtractor):
     name: str = 'HOG_extractor'
 
-    def __init__(self, win_size = 64, block_size = 16, block_stride = 8, cell_size = 8, n_bins = 180, *args, **kwargs) -> None:
+    def __init__(self, win_size = 16, block_size = 16, block_stride = 8, cell_size = 8, n_bins = 180, img_shape = 240, *args, **kwargs) -> None:
 
-        self.hog_descriptor = cv2.HOGDescriptor(win_size, block_size, block_stride, cell_size, n_bins)
+        self.hog_descriptor = cv2.HOGDescriptor((win_size, win_size), (block_size, block_size), (block_stride, block_stride), (cell_size, cell_size), n_bins)
+        self.shape = (img_shape, img_shape)
+
 
         return None
     
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
+
         return {
-            'result': [self.hog_descriptor.compute(image) for image in images]
+            'result': [self.hog_descriptor.compute(cv2.resize(image, self.shape)) for image in images]
         }
 
 @Registry.register_features_extractor
