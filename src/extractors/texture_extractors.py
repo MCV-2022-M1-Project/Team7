@@ -27,7 +27,7 @@ class HistogramOrientedGradientsExtractor(FeaturesExtractor):
 @Registry.register_features_extractor
 class ZernikeExtractor(FeaturesExtractor):
     name: str = 'zernike_extractor'
-    def __init__(self, radius: int = 10, degree = 12, channel: int = 1, *args, **kwargs) -> None:
+    def __init__(self, radius: int = 100, degree = 4, channel: int = 1, *args, **kwargs) -> None:
         self.radius = radius
         self.degree = degree
         self.channel = channel
