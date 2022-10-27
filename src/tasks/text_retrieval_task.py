@@ -71,7 +71,7 @@ class TextDetectionTask(BaseTask):
                         metric.compute(annotation_tokenized, text_tokens) 
 
             with open(os.path.join(text_transcriptions_output_dir, f"{sample.id:05d}.txt"), 'w', encoding="utf-8") as f:
-                f.write("\n".join(text_transcription))     
+                f.write("\n".join(text_transcription))   
 
         if not inference_only:
             logging.info(f"Printing report and saving to disk.")

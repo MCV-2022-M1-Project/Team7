@@ -138,6 +138,7 @@ class F1(Metric):
 @Registry.register_metric
 class IoU(Metric):
     name: str = "iou"
+    input_type: str = "bb"
 
     def compute(self, ground_truth, predictions):
         # ground_truth = array(ground_truth, dtype=np.uint8)
