@@ -24,12 +24,26 @@ class RetrievalTask(BaseTask):
         """
         if self.tokenizer is not None:
             logging.info("Building tokenizer vocabulary...")
-            self.tokenizer.fit(self.query_dataset.images)
+            if self.tokenizer.input_type == "image":
+                self.tokenizer.fit(self.query_dataset.images)
+            elif self.tokenizer.input_type == "str":
+                self.tokenizer.fit([", ".join(l) for ann in self.retrieval_dataset.annotations for l in ann])
 
         logging.info("Extracting retrieval dataset features...")
-        feats_retrieval = self.extractor.run(self.retrieval_dataset.images, tokenizer=self.tokenizer)["result"]
-        neighbors = NearestNeighbors(n_neighbors=self.config.distance.n_neighbors, metric=self.config.distance.name)
-        neighbors.fit(feats_retrieval)
+
+        if self.tokenizer is not None and self.tokenizer.input_type == "str":
+            assert self.config.text_distance is not None
+            feats_retrieval = self.tokenizer.tokenize([" ".join(l) if type(l) is list else l for ann in self.retrieval_dataset.annotations for l in ann])
+            distance = Registry.get_distance_instance(self.config.text_distance)
+            text_neighbors = NearestNeighbors(n_neighbors=self.config.text_distance.n_neighbors, metric=distance.get_reference())
+            text_neighbors.fit(feats_retrieval)
+
+        if self.extractor is not None:
+            distance = Registry.get_distance_instance(self.config.distance)
+            feats_retrieval = self.extractor.run(self.retrieval_dataset.images, tokenizer=self.tokenizer)["result"]
+            image_neighbors = NearestNeighbors(n_neighbors=self.config.distance.n_neighbors, metric=distance.get_reference())
+            image_neighbors.fit(feats_retrieval)
+        
         final_output_w1=[]
         final_output_w2=[]
         
@@ -38,22 +52,43 @@ class RetrievalTask(BaseTask):
         for sample in tqdm(self.query_dataset):
             image = sample.image
             images_list = []
+            bb_list = []
+            text_transcription = []
+            text_tokens = []
 
             for pp in self.preprocessing:
-                output = pp.run(image)
-                image = output["result"]
+                if type(image) is list:
+                    output = []
 
-                if "mask" in output:
-                    image = (image * output["mask"][:,:,None]).astype(np.uint8)
+                    for img in image:
+                        output.append(pp.run(img))
+                else:
+                    output = [pp.run(image)]
 
-                if "text_mask" in output:
-                    image = (image * (1-(output["text_mask"][:,:,None] / 255))).astype(np.uint8)
-
-                if "bb" in output:
+                if "bb" in output[0]:
                     images_list = []
+                    bb_list = output[0]["bb"]
 
-                    for bb in output["bb"]:
+                    for bb in bb_list:
                         images_list.append(image[bb[0]:bb[2], bb[1]:bb[3]])
+
+                    if len(images_list) > 0:
+                        image = images_list
+
+                if "text_mask" in output[0]:
+                    images = []
+
+                    for out in output:
+                        image = out["result"]
+                        text_mask_pred = out["text_mask"]
+                        images.append((image * (1-(text_mask_pred[:,:,None] / 255))).astype(np.uint8))
+
+                if "text" in output[0]:
+                    for out in output:
+                        text_transcription.append(out["text"])
+
+                        if self.tokenizer is not None and self.tokenizer.input_type == "str":
+                            text_tokens.append(self.tokenizer.tokenize(out["text"])[0])
 
             if len(images_list) > 0:
                 image = images_list
@@ -61,10 +96,28 @@ class RetrievalTask(BaseTask):
             if type(image) is not list:
                 image = [image]
 
-            feats_pred = self.extractor.run(image, tokenizer=self.tokenizer)["result"]
-            top_k_pred = neighbors.kneighbors(feats_pred, n_neighbors=self.config.distance.n_neighbors, return_distance=False)
-            final_output_w1.append([int(v) for v in top_k_pred[0][:10]])
-            final_output_w2.append([[int(v) for v in top_k_pred[i][:10]] for i in range(len(image))])
+            top_k_pred = {}
+
+            if self.extractor is not None:
+                feats_pred = self.extractor.run(image, tokenizer=self.tokenizer)["result"]
+                top_k_pred["extractor"] = image_neighbors.kneighbors(feats_pred, return_distance=False)
+
+            if self.tokenizer is not None and self.tokenizer.input_type == "str":
+                assert len(text_transcription) > 0, "If you use a tokenizer you must set a text detection preprocessor!"
+                top_k_pred["text"] = text_neighbors.kneighbors(text_tokens, return_distance=False)
+
+            if self.extractor is not None:
+                if self.tokenizer is not None and self.tokenizer.input_type == "str":
+                    top_k_pred = [[int(v) for v in top_k_pred["extractor"][i] if v in top_k_pred["text"][i]] for i in range(len(image))]
+                else:
+                    top_k_pred = top_k_pred["extractor"]
+            elif self.tokenizer is not None and self.tokenizer.input_type == "str":
+                top_k_pred = top_k_pred["text"]
+            else:
+                raise Exception("You are not extracting any features.")
+
+            final_output_w1.append([v for v in top_k_pred[0][:10]])
+            final_output_w2.append([[v for v in top_k_pred[i][:10]] for i in range(len(image))])
 
             if not inference_only:
                 for metric in self.metrics:

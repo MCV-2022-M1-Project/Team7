@@ -1,15 +1,19 @@
 tasks:  
   - name: retrieval
 
-    # tokenizer:
-    #    name: visual_codebook_tokenizer
-    #    k_size: 128
-    #    num_words: 32
+    tokenizer:
+      name: bpe_tokenizer
+      vocab_size: 256
+      fixed_length: 30
+
+    text_distance:
+      name: bag_dist
+      n_neighbors: 20
 
     features_extractor: 
-      name: HOG_extractor
-      # n_patches: 10
-      # channel: 0
+      name: zernike_extractor
+      n_patches: 10
+      channel: 0
 
     distance:
       name: l1
@@ -19,10 +23,11 @@ tasks:
       - name: map
         top_k: [1, 5, 10]
 
-    #preprocessing:
-    #  - name: local_variance_mask_preprocessor
-    #    channel: 1
+    preprocessing:
+      - name: fourier_mask_preprocessor
+        channel: 1
+      - name: text_detector_wo_mask
   
     datasets:
-      - qsd1_w1
+      - qsd1_w2
   

@@ -75,3 +75,27 @@ class JaccardMetric(Metric):
             val += max_val
 
         return val / min(len(ground_truth), len(predictions))
+
+
+@Registry.register_metric
+class TextBagMetric(Metric):
+    name: str = "text_token_bag_dist"
+    input_type: str = "token"
+    
+    def compute(self, ground_truth: List[List[str]], predictions: List[str]) -> float:
+        val = 0.0
+
+        # for preds, gts in zip(predictions, ground_truth):
+        #     val += textdistance.jaccard(preds, gts)
+
+        for pred in predictions:
+            max_val = 0
+
+            for gt in ground_truth:
+                for label in gt:
+                    new_val = textdistance.bag(pred, label)
+                    max_val = max(max_val, new_val)
+
+            val += max_val
+
+        return val / min(len(ground_truth), len(predictions))

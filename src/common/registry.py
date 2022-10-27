@@ -7,6 +7,7 @@ from src.extractors.base import FeaturesExtractor
 from src.metrics.base import Metric
 from src.tasks.base import BaseTask
 from src.tokenizers.base import BaseTokenizer
+from src.distances.base import BaseDistance
 
 
 class Registry:
@@ -33,6 +34,7 @@ class Registry:
     _metrics: Dict[str, Type[Metric]] = {}
     _tasks: Dict[str, Type[BaseTask]] = {}
     _tokenizers: Dict[str, Type[BaseTokenizer]] = {}
+    _distances: Dict[str, Type[BaseDistance]] = {}
 
     @classmethod
     def register(cls, name: str, value: Any) -> None:
@@ -65,6 +67,11 @@ class Registry:
     @classmethod
     def register_tokenizer(cls, cl) -> Type[BaseTokenizer]:
         cls._tokenizers[cl.name] = cl
+        return cl
+
+    @classmethod
+    def register_distance(cls, cl) -> Type[BaseDistance]:
+        cls._distances[cl.name] = cl
         return cl
 
     @classmethod
@@ -107,13 +114,22 @@ class Registry:
         return cls._tasks[name]
 
     @classmethod
-    def get_tokenizer_instance(cls, tokenizer_config: Any) -> Optional[BaseTokenizer]:
+    def get_tokenizer_instance(cls, tokenizer_config: Any) -> BaseTokenizer:
         name = tokenizer_config.name
 
         if name not in cls._tokenizers:
-            raise Exception(f"Tokenizer '{name}' not registered. Available options are: {', '.join(cls._tasks)}")
+            raise Exception(f"Tokenizer '{name}' not registered. Available options are: {', '.join(cls._tokenizers)}")
 
         return cls._tokenizers[name](**tokenizer_config)
+
+    @classmethod
+    def get_distance_instance(cls, distance_config: Any) -> BaseDistance:
+        name = distance_config.name
+
+        if name not in cls._distances:
+            raise Exception(f"Distance '{name}' not registered. Available options are: {', '.join(cls._distances)}")
+
+        return cls._distances[name](**distance_config)
 
     @classmethod
     def get_features_extractor_instance(cls, features_extractor_config: Any) -> FeaturesExtractor:

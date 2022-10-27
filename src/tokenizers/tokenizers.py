@@ -108,7 +108,7 @@ class BPETokenizer:
 
     def __init__(self, vocab_size=256, pct_bpe=0.2, word_tokenizer=None,
                  silent=True, ngram_min=2, ngram_max=8, required_tokens=None,
-                 strict=False, lowercase=True,
+                 strict=False, lowercase=True, fixed_length=None,
                  EOW=DEFAULT_EOW, SOW=DEFAULT_SOW, UNK=DEFAULT_UNK, PAD=DEFAULT_PAD, **kwargs):
         if vocab_size < 1:
             raise ValueError('vocab size must be greater than 0.')
@@ -137,6 +137,7 @@ class BPETokenizer:
         self.ngram_max = ngram_max
         self.strict = strict
         self.lowercase = lowercase
+        self.fixed_length = fixed_length
 
     def mute(self):
         """ Turn on silent mode """
@@ -279,7 +280,7 @@ class BPETokenizer:
 
         return self.transform(sentences)
 
-    def transform(self, sentences, reverse=False, fixed_length=None):
+    def transform(self, sentences, reverse=False):
         # type: (Encoder, Iterable[str], bool, int) -> List[List[int]]
         """ Turns space separated tokens into vocab idxs """
         encoded_sentences = []
@@ -310,9 +311,9 @@ class BPETokenizer:
                         else:
                             encoded.append(self.word_vocab[self.UNK])
 
-            if fixed_length is not None:
-                encoded = encoded[:fixed_length]
-                while len(encoded) < fixed_length:
+            if self.fixed_length is not None:
+                encoded = encoded[:self.fixed_length]
+                while len(encoded) < self.fixed_length:
                     encoded.append(self.word_vocab[self.PAD])
 
             encoded_sentences.append(encoded[::direction])
