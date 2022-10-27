@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import List, Dict, Protocol
+from typing import Any, List, Dict, Protocol
 
 
 class BaseTokenizer(Protocol):
@@ -12,5 +12,5 @@ class BaseTokenizer(Protocol):
     def tokenize(self, sample) -> Dict[str, np.ndarray]:
         pass
 
-    def fit(self, samples: List[np.ndarray], **kwargs) -> None:
+    def fit(self, samples: List[Any], **kwargs) -> None:
         pass

@@ -6,6 +6,7 @@ from typing import Any, Protocol, List
 
 class Metric(ABC):
     name: str
+    input_type: str = "any"
 
     def __init__(self, *args, **kwargs) -> None:
         pass
@@ -15,10 +16,3 @@ class Metric(ABC):
 
     def __str__(self) -> str:
         return self.name
-
-
-class GraphMetric(Protocol):
-    name: str
-    
-    def compute(self, ground_truth: Any, predictions: Any, **kwargs) -> None:
-        pass
