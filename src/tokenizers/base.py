@@ -5,6 +5,7 @@ from typing import Any, List, Dict, Protocol
 
 class BaseTokenizer(Protocol):
     name: str
+    input_type: str = "any"
 
     def __init__(self, *args, **kwargs) -> None:
         pass

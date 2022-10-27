@@ -19,6 +19,7 @@ def tohsv(img):
 @Registry.register_tokenizer
 class VisualCodebookProcessor(BaseTokenizer):
     name: str = "visual_codebook_tokenizer"
+    input_type: str = "image"
 
     def __init__(self, k_size: int = 32, sample: int = 255, channel=0, num_words: int = 64, **kwargs) -> None:
         super(VisualCodebookProcessor).__init__()
@@ -103,6 +104,7 @@ class BPETokenizer:
     Taken from https://github.com/soaxelbrooke/python-bpe.
     """
     name: str = "bpe_tokenizer"
+    input_type: str = "str"
 
     def __init__(self, vocab_size=256, pct_bpe=0.2, word_tokenizer=None,
                  silent=True, ngram_min=2, ngram_max=8, required_tokens=None,

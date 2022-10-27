@@ -35,6 +35,7 @@ class TextDetectionTask(BaseTask):
             if self.tokenizer is not None:
                 annotation_tokenized = [self.tokenizer.tokenize(ann) for ann in annotation]
             
+            bb_list = []
             text_bb = sample.text_boxes
             text_boxes_pred = []
             text_mask_pred = None
@@ -45,15 +46,16 @@ class TextDetectionTask(BaseTask):
                 if type(image) is list:
                     output = []
 
-                    for i, img in enumerate(image):
+                    for img in image:
                         output.append(pp.run(img))
                 else:
                     output = [pp.run(image)]
 
-                if "bb" in output[0]:
+                if "bb" in output[0]: # W! Output of painting masks are inverted: (y, x, y2, x2)
                     images_list = []
+                    bb_list = output[0]["bb"]
 
-                    for bb in output[0]["bb"]:
+                    for bb in bb_list:
                         images_list.append(image[bb[0]:bb[2], bb[1]:bb[3]])
 
                     if len(images_list) > 0:
@@ -78,6 +80,15 @@ class TextDetectionTask(BaseTask):
 
                         if self.tokenizer is not None:
                             text_tokens.append(self.tokenizer.tokenize(out["text"])[0])
+
+            if len(bb_list) > 0:
+                trans_corrected_bbs = [(
+                        image_bb[1] + text_bb[0],
+                        image_bb[0] + text_bb[1],
+                        image_bb[1] + text_bb[2],
+                        image_bb[0] + text_bb[3],
+                    ) for image_bb, text_bb in zip(bb_list, text_boxes_pred)]
+                text_boxes_pred = trans_corrected_bbs
 
             if not inference_only:
                 for metric in self.metrics:
