@@ -51,7 +51,7 @@ class Dataset:
                 text_boxes_samples: List[List[List[np.ndarray]]] = pickle.load(f)
 
                 for text_box_list in text_boxes_samples:
-                    if len(text_box_list[0]) > 2:
+                    if type(text_box_list[0][0]) is int:
                         self.text_boxes.append(text_box_list)
                     else:
                         self.text_boxes.append([(
@@ -67,9 +67,10 @@ class Dataset:
 
         for path in ann_paths:
             with open(path, "r", encoding='latin-1') as f:
-                ann = f.read()[2:-2].replace("'", "").split(", ")
+                anns = f.readlines()
 
-            self.annotations.append(tuple(ann))
+            anns = [ann[2:-2].replace("\n", "").replace("'", "").split(", ") if ann[0] == "(" else ann.replace("\n", "") for ann in anns]
+            self.annotations.append(anns)
 
     def __load_image(self, id: int) -> np.ndarray:
         image = self.__images[id]
