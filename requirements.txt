@@ -11,3 +11,6 @@ matplotlib
 tqdm
 sympy
 mahotas
+textdistance
+toolz
+nltk
