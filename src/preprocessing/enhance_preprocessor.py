@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from typing import Callable, Dict, Tuple
 
+from src.common.utils import estimate_noise
 from src.preprocessing.base import Preprocessing
 from src.common.registry import Registry
 
@@ -62,16 +63,18 @@ class DenoisePreprocessor(Preprocessing):
             }
 
         """
-        (b, g, r) = cv2.split(image)
+        enhanced = image
+        if estimate_noise(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)) > 10:
+            (b, g, r) = cv2.split(image)
 
-        b_blur = cv2.medianBlur(b, 3)
-        g_blur = cv2.medianBlur(g, 3)
-        r_blur = cv2.medianBlur(r, 3)
+            b_blur = cv2.medianBlur(b, 3)
+            g_blur = cv2.medianBlur(g, 3)
+            r_blur = cv2.medianBlur(r, 3)
 
-        b_denoise = cv2.fastNlMeansDenoising(b_blur, self.h, self.template_window_size, self.search_window_size)
-        g_denoise = cv2.fastNlMeansDenoising(g_blur, self.h, self.template_window_size, self.search_window_size)
-        r_denoise = cv2.fastNlMeansDenoising(r_blur, self.h, self.template_window_size, self.search_window_size)
+            b_denoise = cv2.fastNlMeansDenoising(b_blur, self.h, self.template_window_size, self.search_window_size)
+            g_denoise = cv2.fastNlMeansDenoising(g_blur, self.h, self.template_window_size, self.search_window_size)
+            r_denoise = cv2.fastNlMeansDenoising(r_blur, self.h, self.template_window_size, self.search_window_size)
 
-        enhanced = cv2.merge((b_denoise, g_denoise, r_denoise))
+            enhanced = cv2.merge((b_denoise, g_denoise, r_denoise))
 
         return {"result": enhanced}
