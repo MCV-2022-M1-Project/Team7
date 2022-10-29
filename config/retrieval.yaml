@@ -1,33 +1,40 @@
 tasks:  
-  - name: retrieval_comb
+  - name: retrieval_distcomb
 
-    # tokenizer:
-    #   name: bpe_tokenizer
-    #   vocab_size: 256
-    #   fixed_length: 30
+    tokenizer:
+      name: bpe_tokenizer
+      vocab_size: 256
+      fixed_length: 30
+      feats_w: 0.3
+      distance:
+        name: bag_dist
+        n_neighbors: 20
 
     features_extractors: 
+      # - name: hist_rgb_concat_extractor
+      #   feats_w: 0.33
+      #   distance:
+      #     name: l1
+      #     n_neighbors: 20
       - name: grayscale_extractor
-        # n_patches: 10
-        # channel: 0
-
-    distance:
-      name: l1
-      n_neighbors: 20
+        feats_w: 0.7
+        distance:
+          name: l1
+          n_neighbors: 20
 
     metrics:
       - name: map
         top_k: [1, 5, 10]
 
-    # preprocessing:
+    preprocessing:
       # - name: denoise_preprocessor
       #   h: 1
       #   template_window_size: 7
       #   search_window_size: 21
-      # - name: fourier_mask_preprocessor
-      #   channel: 1
-      # - name: text_detector_wo_mask
+      - name: fourier_mask_preprocessor
+        channel: 1
+      - name: text_detector_wo_mask
 
     datasets:
-      - qsd1_w1
+      - qsd1_w2
   
