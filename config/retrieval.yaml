@@ -24,10 +24,14 @@ tasks:
         top_k: [1, 5, 10]
 
     preprocessing:
+      - name: denoise_preprocessor
+        h: 1
+        template_window_size: 7
+        search_window_size: 21
       - name: fourier_mask_preprocessor
         channel: 1
       - name: text_detector_wo_mask
-  
+
     datasets:
       - qsd1_w2
   

@@ -4,10 +4,10 @@ import numpy as np
 import pickle
 from tqdm import tqdm
 from sklearn.neighbors import NearestNeighbors
-
+import cv2 as cv
 
 from src.common.registry import Registry
-from src.common.utils import write_report
+from src.common.utils import write_report, estimate_noise
 from src.tasks.base import BaseTask
 
 
@@ -61,9 +61,19 @@ class RetrievalTask(BaseTask):
                     output = []
 
                     for img in image:
-                        output.append(pp.run(img))
+                        # only run denoising based on image quality
+                        if pp.name == "denoise_preprocessor":
+                            if estimate_noise(cv.cvtColor(image, cv.COLOR_BGR2GRAY)) > 10:
+                                output.append(pp.run(img))
+                        else:
+                            output.append(pp.run(img))
                 else:
-                    output = [pp.run(image)]
+                    # only run denoising based on image quality
+                    if pp.name == "denoise_preprocessor":
+                        if estimate_noise(cv.cvtColor(image, cv.COLOR_BGR2GRAY)) > 10:
+                            output = [pp.run(image)]
+                    else:
+                        output = [pp.run(image)]
 
                 if "bb" in output[0]:
                     images_list = []

@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 from dataclasses import dataclass, field
 from typing import Any, List, Optional
+from scipy.signal import convolve2d
 
 from src.metrics.base import Metric
 
@@ -440,3 +441,17 @@ def eval_contours(contours, width):
                 CM_order.insert(l, i)
                 break
     return CM_order[0]
+
+
+def estimate_noise(image) -> float:
+    """
+    Reference: https://stackoverflow.com/questions/2440504/noise-estimation-noise-measurement-in-image
+               (J. Immerkær, "Fast Noise Variance Estimation", Computer Vision and Image Understanding)
+    """
+    dim = image.shape
+
+    M = [[1, -2, 1], [-2, 4, -2], [1, -2, 1]]
+
+    sigma = np.sum(np.sum(np.absolute(convolve2d(image, M))))
+    sigma = sigma * np.sqrt(0.5 * np.pi) / (6 * (dim[0]-2) * (dim[1]-2))
+    return sigma

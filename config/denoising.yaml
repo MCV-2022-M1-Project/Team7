@@ -1,0 +1,15 @@
+tasks:
+  - name: denoising
+
+    metrics:
+      - name: psnr
+      - name: ssim
+
+    preprocessing:
+      - name: denoise_preprocessor
+        h: 3
+        template_window_size: 7
+        search_window_size: 21
+
+    datasets:
+      - qsd1_w3
