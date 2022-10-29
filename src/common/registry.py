@@ -132,8 +132,10 @@ class Registry:
         return cls._distances[name](**distance_config)
 
     @classmethod
-    def get_features_extractor_instance(cls, features_extractor_config: Any) -> FeaturesExtractor:
-        return cls.get_features_extractor_class(features_extractor_config.name)(**features_extractor_config) 
+    def get_features_extractor_instances(cls, features_extractor_config: Any) -> List[FeaturesExtractor]:
+        return [
+            cls.get_features_extractor_class(kwargs["name"])(**kwargs) for kwargs in features_extractor_config
+        ]
 
     @classmethod
     def get_preprocessing_instances(cls, preprocessing_configs: Any) -> List[Preprocessing]:

@@ -3,11 +3,11 @@ import numpy as np
 from typing import Callable, Dict
 from skimage import filters
 from scipy.ndimage import gaussian_filter
-from skimage.morphology import flood_fill
 
-from src.common.utils import image_resize
+from src.common.utils import TO_COLOR_SPACE
 from src.preprocessing.base import Preprocessing
 from src.common.registry import Registry
+
 
 
 def std(sample: np.ndarray) -> np.float32: return sample.std()
@@ -23,25 +23,6 @@ def fill(img: np.ndarray, kernel: int = 10, iterations=1) -> np.ndarray:
     kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (1, kernel))
     img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel_h, iterations=iterations)
     return cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel_v, iterations=iterations)
-
-
-def tohsv(img):
-    return cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-
-def tolab(img):
-    return cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-
-
-def togray(img):
-    return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-
-TO_COLOR_SPACE: Dict[str, Callable] = {
-    "hsv": tohsv,
-    "lab": tolab,
-    "gray": togray,
-}
 
 
 METRICS: Dict[str, Callable] = {

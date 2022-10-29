@@ -2,7 +2,7 @@ import json
 import numpy as np
 import cv2
 from dataclasses import dataclass, field
-from typing import Any, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 from scipy.signal import convolve2d
 
 from src.metrics.base import Metric
@@ -36,6 +36,25 @@ def wrap_metric_classes(metrics_list: List[Metric]) -> List[MetricWrapper]:
     return [MetricWrapper(metric) for metric in metrics_list]
 
 
+def tohsv(img):
+    return cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+
+def tolab(img):
+    return cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+
+
+def togray(img):
+    return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+
+TO_COLOR_SPACE: Dict[str, Callable] = {
+    "hsv": tohsv,
+    "lab": tolab,
+    "gray": togray,
+}
+
+
 def image_normalize(img: np.ndarray) -> np.ndarray:
     """
     Args:
@@ -44,7 +63,9 @@ def image_normalize(img: np.ndarray) -> np.ndarray:
     Output: 
         HxW [0, 1]
     """ 
-    return img / 255
+    img = img - img.min()
+    img = img / img.max()
+    return img
 
 
 def binarize(img: np.ndarray) -> np.ndarray:

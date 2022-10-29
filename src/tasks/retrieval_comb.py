@@ -11,11 +11,11 @@ from src.tasks.base import BaseTask
 
 
 @Registry.register_task
-class RetrievalTask(BaseTask):
+class RetrievalCombTask(BaseTask):
     """
     Base task runner.
     """
-    name: str = "retrieval"
+    name: str = "retrieval_comb"
 
     def run(self, inference_only: bool = False) -> None:
         """
@@ -30,18 +30,19 @@ class RetrievalTask(BaseTask):
 
         logging.info("Extracting retrieval dataset features...")
 
+        features = []
+        
         if self.tokenizer is not None and self.tokenizer.input_type == "str":
-            assert self.config.text_distance is not None
-            feats_retrieval = self.tokenizer.tokenize([" ".join(l) if type(l) is list else l for ann in self.retrieval_dataset.annotations for l in ann])
-            distance = Registry.get_distance_instance(self.config.text_distance)
-            text_neighbors = NearestNeighbors(n_neighbors=self.config.text_distance.n_neighbors, metric=distance.get_reference())
-            text_neighbors.fit(feats_retrieval)
+            feats_text = self.tokenizer.tokenize([" ".join(l) if type(l) is list else l for ann in self.retrieval_dataset.annotations for l in ann])
+            features += [np.array(feats_text)]
 
         if self.extractors is not None:
-            distance = Registry.get_distance_instance(self.config.distance)
-            feats_retrieval = self.extractors.run(self.retrieval_dataset.images, tokenizer=self.tokenizer)["result"]
-            image_neighbors = NearestNeighbors(n_neighbors=self.config.distance.n_neighbors, metric=distance.get_reference())
-            image_neighbors.fit(feats_retrieval)
+            features += ([extractor.run(self.retrieval_dataset.images, tokenizer=self.tokenizer)["result"] for extractor in self.extractors])
+            features = np.concatenate(features, axis=-1)
+
+        distance = Registry.get_distance_instance(self.config.distance)
+        knn_model = NearestNeighbors(n_neighbors=self.config.distance.n_neighbors, metric=distance.get_reference())
+        knn_model.fit(features)
         
         final_output_w1=[]
         final_output_w2=[]
@@ -95,25 +96,21 @@ class RetrievalTask(BaseTask):
             if type(image) is not list:
                 image = [image]
 
-            top_k_pred = {}
-
-            if self.extractors is not None:
-                feats_pred = self.extractors.run(image, tokenizer=self.tokenizer)["result"]
-                top_k_pred["extractor"] = image_neighbors.kneighbors(feats_pred, return_distance=False)
+            feats_pred = []
 
             if self.tokenizer is not None and self.tokenizer.input_type == "str":
                 assert len(text_transcription) > 0, "If you use a tokenizer you must set a text detection preprocessor!"
-                top_k_pred["text"] = text_neighbors.kneighbors(text_tokens, return_distance=False)
+                feats_pred += [np.array(text_tokens)]
 
             if self.extractors is not None:
-                if self.tokenizer is not None and self.tokenizer.input_type == "str":
-                    top_k_pred = [[int(v) for v in top_k_pred["extractor"][i] if v in top_k_pred["text"][i]] for i in range(len(image))]
-                else:
-                    top_k_pred = top_k_pred["extractor"]
-            elif self.tokenizer is not None and self.tokenizer.input_type == "str":
-                top_k_pred = top_k_pred["text"]
+                feats_pred += [extractor.run(image, tokenizer=self.tokenizer)["result"] for extractor in self.extractors]
+
+            if len(feats_pred) > 1:
+                feats_pred = np.concatenate(feats_pred, axis=-1)
             else:
-                raise Exception("You are not extracting any features.")
+                feats_pred = feats_pred[0]
+
+            top_k_pred = knn_model.kneighbors(feats_pred, return_distance=False)
 
             final_output_w1.append([v for v in top_k_pred[0][:10]])
             final_output_w2.append([[v for v in top_k_pred[i][:10]] for i in range(len(image))])

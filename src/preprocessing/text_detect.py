@@ -188,10 +188,13 @@ class AyanTextDetector(Preprocessing):
 class TextDetectorWOMask(Preprocessing):
     name: str = "text_detector_wo_mask"
 
-    def __init__(self, *args, **kwargs) -> None:
-        return None
+    def __init__(self, blur_size: int = 5, kernel_size=10, kernel_reduction_x=60, kernel_reduction_y=4, *args, **kwargs) -> None:
+        self.blur_size = blur_size
+        self.kernel_size = kernel_size
+        self.kernel_reduction_x = kernel_reduction_x
+        self.kernel_reduction_y = kernel_reduction_y
 
-    def run(self,  image: np.ndarray, blur_size: int = 5, kernel_size=10, kernel_reduction_x=60, kernel_reduction_y=4, **kwargs) -> Dict[str, np.ndarray]:
+    def run(self,  image: np.ndarray, **kwargs) -> Dict[str, np.ndarray]:
         """
         This function detects the text in the image and returns an array with coordinates of text bbox.
 
@@ -209,8 +212,8 @@ class TextDetectorWOMask(Preprocessing):
         # TextDetection.find_regions(img)
 
         # Open morphological transformation using a square kernel with dimensions 10x10
-        kernel = np.ones((kernel_size, kernel_size), np.uint8)
-        s = cv2.GaussianBlur(s, (blur_size, blur_size), 0)
+        kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
+        s = cv2.GaussianBlur(s, (self.blur_size, self.blur_size), 0)
         # kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (10, 10))
         morph_open = cv2.morphologyEx(s, cv2.MORPH_OPEN, kernel)
         # Convert the image to binary
@@ -218,8 +221,8 @@ class TextDetectorWOMask(Preprocessing):
 
         # Open and close morphological transformation using a rectangle kernel relative to the shape of the image
         shape = image.shape
-        kernel = np.ones((shape[0] // kernel_reduction_x,
-                         shape[1] // kernel_reduction_y), np.uint8)
+        kernel = np.ones((shape[0] // self.kernel_reduction_x,
+                         shape[1] // self.kernel_reduction_y), np.uint8)
         th2 = cv2.morphologyEx(th1, cv2.MORPH_OPEN, kernel)
         #th3 = cv2.morphologyEx(th2, cv2.MORPH_CLOSE, kernel)
 
@@ -485,5 +488,97 @@ class TheMostStupidTextDetector(Preprocessing):
             text += d["text"]
 
         text = " ".join([s for s in text if s != ""])
+
+        return {"result": image.copy(), "text_mask": mask, "text_bb": text_blobs, "text": text}
+
+
+
+
+@Registry.register_preprocessing
+class AnywayItsGettingLateTextDetector(Preprocessing):
+    name: str = "anyway_text_detector"
+
+    def __init__(self, min_area: float = 0.01, max_area: float = 0.15, *args, **kwargs) -> None:
+        self.min_area = min_area
+        self.max_area = max_area
+
+    def __find_box(self, image):
+        text_blobs = []
+        original_area = np.ceil(image.shape[0] * image.shape[1])
+        min_area = int(original_area * 0.01)
+        max_area = int(original_area * 0.4)
+        contours, hierarchy = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        for contour in contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            # contour_area = cv2.contourArea(contour)
+            contour_area = w * h
+
+            if contour_area < min_area or contour_area > max_area:
+                continue
+            
+            aspect_ratio = w/h
+            rectanglessness = contour_area / (w * h)
+
+            if aspect_ratio < 2.5: # or rectanglessness < 0.6:
+                continue
+
+            text_blobs.append((x, y, x+w, y+h))
+
+        return text_blobs
+
+    def run(self,  image: np.ndarray, **kwargs) -> Dict[str, np.ndarray]:
+        '''
+        Binarizes by many colors to extract de bounding box.
+        Uses Tesseract to detect and extract text in a given image.
+
+        Args:
+            Image: Image to detect text on.
+
+        Returns:
+            Dict: {
+                "ouput": Processed image.
+                "text_mask": Mask of the text.
+                "text_bb": List of bounding box of the text (1 or more per image) [[x1, y1, x2, y2],...]
+            }
+        '''
+        original_shape = image.shape[:2]
+        # image_resized = image_resize(image, 800, 800)
+
+        rgb = cv2.cvtColor(
+            image, cv2.COLOR_BGR2RGB)  # convert image to RGB color space
+        hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+        h, s, v = cv2.split(hsv)
+
+        diff_image = (rgb * 2 - s[:,:,None] - v[:,:,None] * 2).mean(axis=-1)
+        diff_image = cv2.GaussianBlur(diff_image, (5, 5), 0)
+        diff_image = cv2.morphologyEx(diff_image, cv2.MORPH_OPEN, np.ones((7, 7), np.uint8))    
+
+        diff_image = diff_image - diff_image.min()
+        diff_image = diff_image / diff_image.max()
+        diff_image = diff_image * 255
+
+        diff_image = cv2.morphologyEx(diff_image, cv2.MORPH_CLOSE, np.ones((13, 13), np.uint8))    
+
+        text_blobs = []
+
+        for i in range(0, 50, 5):
+            text_blobs += self.__find_box((diff_image > (200+i)).astype(np.uint8))
+            text_blobs += self.__find_box((diff_image < (55-i)).astype(np.uint8))
+
+        mask = np.zeros_like(diff_image)
+
+        final_bbs = []
+        text = ""
+        for x_min, y_min, x_max, y_max in text_blobs:
+            cropped_image = image[y_min:y_max, x_min:x_max]
+            d = pytesseract.image_to_data(cropped_image, output_type=pytesseract.Output.DICT, lang='cat', nice=5)
+            new_text = " ".join([w for w in d["text"] if len(w) > 1])
+
+            if len(new_text) > 2 and new_text not in text:
+                text += new_text
+                final_bbs.append((x_min, y_min, x_max, y_max))
+                mask[y_min:y_max, x_min:x_max] = 1
+                break
 
         return {"result": image.copy(), "text_mask": mask, "text_bb": text_blobs, "text": text}

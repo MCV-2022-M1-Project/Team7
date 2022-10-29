@@ -1,19 +1,15 @@
 tasks:  
-  - name: retrieval
+  - name: retrieval_comb
 
-    tokenizer:
-      name: bpe_tokenizer
-      vocab_size: 256
-      fixed_length: 30
+    # tokenizer:
+    #   name: bpe_tokenizer
+    #   vocab_size: 256
+    #   fixed_length: 30
 
-    text_distance:
-      name: bag_dist
-      n_neighbors: 20
-
-    features_extractor: 
-      name: zernike_extractor
-      n_patches: 10
-      channel: 0
+    features_extractors: 
+      - name: grayscale_extractor
+        # n_patches: 10
+        # channel: 0
 
     distance:
       name: l1
@@ -23,15 +19,15 @@ tasks:
       - name: map
         top_k: [1, 5, 10]
 
-    preprocessing:
-      - name: denoise_preprocessor
-        h: 1
-        template_window_size: 7
-        search_window_size: 21
-      - name: fourier_mask_preprocessor
-        channel: 1
-      - name: text_detector_wo_mask
+    # preprocessing:
+      # - name: denoise_preprocessor
+      #   h: 1
+      #   template_window_size: 7
+      #   search_window_size: 21
+      # - name: fourier_mask_preprocessor
+      #   channel: 1
+      # - name: text_detector_wo_mask
 
     datasets:
-      - qsd1_w2
+      - qsd1_w1
   

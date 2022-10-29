@@ -23,7 +23,7 @@ class BaseTask(ABC):
                  output_dir: str = "./output",
                  tokenizer: Optional[BaseTokenizer] = None,
                  preprocessing:  List[Preprocessing] = [],
-                 features_extractor:  Optional[FeaturesExtractor] = None,
+                 features_extractors:  Optional[List[FeaturesExtractor]] = None,
                  metrics: List[MetricWrapper] = [],
                  id: str = '0',
                  *args,
@@ -38,7 +38,7 @@ class BaseTask(ABC):
         self.report_path = os.path.join(self.output_dir, "report.txt")
         os.makedirs(self.output_dir, exist_ok=True)
         self.tokenizer = tokenizer
-        self.extractor = features_extractor
+        self.extractors = features_extractors
         self.preprocessing = preprocessing
         self.metrics = metrics
 
