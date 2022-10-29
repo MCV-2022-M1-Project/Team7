@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 from typing import Callable, Dict, Tuple
 
+from skimage.restoration import denoise_wavelet, estimate_sigma
+
 from src.common.utils import estimate_noise
 from src.preprocessing.base import Preprocessing
 from src.common.registry import Registry
@@ -41,8 +43,8 @@ class ShadowRemovePreprocessor(Preprocessing):
 
 
 @Registry.register_preprocessing
-class DenoisePreprocessor(Preprocessing):
-    name: str = "denoise_preprocessor"
+class ChannelsDenoisePreprocessor(Preprocessing):
+    name: str = "channels_denoise_preprocessor"
 
     def __init__(self, h=3, template_window_size=7, search_window_size=21, **kwargs) -> None:
         self.h = h
@@ -76,5 +78,68 @@ class DenoisePreprocessor(Preprocessing):
             r_denoise = cv2.fastNlMeansDenoising(r_blur, self.h, self.template_window_size, self.search_window_size)
 
             enhanced = cv2.merge((b_denoise, g_denoise, r_denoise))
+
+        return {"result": enhanced}
+
+
+@Registry.register_preprocessing
+class ColoredDenoisePreprocessor(Preprocessing):
+    name: str = "colored_denoise_preprocessor"
+
+    def __init__(self, h=10, template_window_size=7, search_window_size=21, **kwargs) -> None:
+        self.h = h
+        self.template_window_size = template_window_size
+        self.search_window_size = search_window_size
+
+    def run(self, image, **kwargs) -> Dict[str, np.ndarray]:
+        """
+
+        Takes an image as an input and applies morphological transformations to remove noise.
+
+        Args:
+            image: Sample image to preprocess
+
+        Returns:
+            Dict: {
+                "output": Processed image.
+            }
+
+        """
+        enhanced = image
+        if estimate_noise(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)) > 10:
+            blur = cv2.medianBlur(image, 3)
+            enhanced = cv2.fastNlMeansDenoisingColored(blur, self.h, self.template_window_size, self.search_window_size)
+
+        return {"result": enhanced}
+
+
+@Registry.register_preprocessing
+class WaveletDenoisePreprocessor(Preprocessing):
+    name: str = "wavelet_visushrink"
+
+    def __init__(self, *args, **kwargs) -> None:
+        return None
+
+    def run(self, image, **kwargs) -> Dict[str, np.ndarray]:
+        """
+
+        Takes an image as an input and applies morphological transformations to remove noise.
+        VisuShrink is designed to eliminate noise with high probability, but this results in an over-smooth appearance.
+        Args:
+            image: Sample image to preprocess
+
+        Returns:
+            Dict: {
+                "output": Processed image.
+            }
+
+        """
+        enhanced = image
+        if estimate_noise(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)) > 10:
+            blur = cv2.medianBlur(image, 3)
+            sigma_est = estimate_sigma(image, channel_axis=-1, average_sigmas=True)
+            enhanced = denoise_wavelet(image, channel_axis=-1, convert2ycbcr=True,
+                                       method='VisuShrink', mode='soft',
+                                       sigma=sigma_est / 2, rescale_sigma=True)
 
         return {"result": enhanced}
