@@ -99,33 +99,33 @@ class RetrievalDistCombTask(BaseTask):
             if type(image) is not list:
                 image = [image]
 
-            distances = []
+            rankings = []
 
             if self.tokenizer is not None and self.tokenizer.input_type == "str":
                 assert len(text_transcription) > 0, "If you use a tokenizer you must set a text detection preprocessor!"
                 feats = np.array(text_tokens)
-                dist, neighs = knn_models[self.tokenizer.name].kneighbors(feats, return_distance=True)
-                dist = np.array([d[n.argsort()] for d, n in zip(dist, neighs)])
-                distances.append(dist * self.config.tokenizer.feats_w)
+                neighs = knn_models[self.tokenizer.name].kneighbors(feats, return_distance=False)
+                ranking = np.array([n.argsort() for n in neighs])
+                rankings.append(ranking * self.config.tokenizer.feats_w)
 
             if self.extractors is not None:
                 for extractor in self.extractors:
                     feats = extractor.run(image, tokenizer=self.tokenizer)["result"]
-                    dist, neighs = knn_models[extractor.name].kneighbors(feats, return_distance=True)
+                    neighs = knn_models[extractor.name].kneighbors(feats, return_distance=False)
+                    ranking = np.array([n.argsort() for n in neighs])
                     w = [e["feats_w"] for e in self.config.features_extractors if e.name == extractor.name][0]
-                    dist = np.array([d[n.argsort()] for d, n in zip(dist, neighs)])
-                    distances.append(dist * w)
+                    rankings.append(ranking * w)
 
-            per_image_dists = []
+            per_image_rankings = []
 
-            for e_dists in distances:
-                for i, dists in enumerate(e_dists):
-                    if len(per_image_dists) <= i:
-                        per_image_dists.append(dists)
+            for e_ranking in rankings:
+                for i, r in enumerate(e_ranking):
+                    if len(per_image_rankings) <= i:
+                        per_image_rankings.append(r)
                     else:
-                        per_image_dists[i] += dists
+                        per_image_rankings[i] += r
 
-            top_k_pred = [np.argsort(d) for d in per_image_dists]
+            top_k_pred = [np.argsort(r) for r in per_image_rankings]
 
             final_output_w1.append([v for v in top_k_pred[0][:10]])
             final_output_w2.append([[v for v in top_k_pred[i][:10]] for i in range(len(image))])
