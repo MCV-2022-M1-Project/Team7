@@ -6,7 +6,7 @@ tasks:
       - name: ssim
 
     preprocessing:
-      - name: denoise_preprocessor
+      - name: channels_denoise_preprocessor
         h: 3
         template_window_size: 7
         search_window_size: 21
