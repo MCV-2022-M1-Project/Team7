@@ -144,4 +144,4 @@ class VisuShrinkDenoisePreprocessor(Preprocessing):
                                        method='VisuShrink', mode=self.mode,
                                        sigma=sigma_est/2, rescale_sigma=self.rescale_sigma)
             enhanced = enhanced*255
-        return {"result": enhanced}
+        return {"result": enhanced.astype(np.uint8)}
