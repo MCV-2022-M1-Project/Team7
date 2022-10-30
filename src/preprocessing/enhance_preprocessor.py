@@ -140,8 +140,7 @@ class VisuShrinkDenoisePreprocessor(Preprocessing):
         if estimate_noise(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)) > 10:
             blur = cv2.medianBlur(image, 3)
             sigma_est = estimate_sigma(blur, channel_axis=-1, average_sigmas=True)
-            enhanced = denoise_wavelet(blur, channel_axis=-1, convert2ycbcr=True,
-                                       method='VisuShrink', mode='soft',
-                                       sigma=sigma_est/2, rescale_sigma=True)
-
+            enhanced = denoise_wavelet(blur, channel_axis=-1, convert2ycbcr=self.convert2ycbcr,
+                                       method='VisuShrink', mode=self.mode,
+                                       sigma=sigma_est/2, rescale_sigma=self.rescale_sigma)
         return {"result": enhanced*255}
