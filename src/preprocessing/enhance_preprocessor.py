@@ -143,4 +143,5 @@ class VisuShrinkDenoisePreprocessor(Preprocessing):
             enhanced = denoise_wavelet(blur, channel_axis=-1, convert2ycbcr=self.convert2ycbcr,
                                        method='VisuShrink', mode=self.mode,
                                        sigma=sigma_est/2, rescale_sigma=self.rescale_sigma)
-        return {"result": enhanced*255}
+            enhanced = enhanced*255
+        return {"result": enhanced}
