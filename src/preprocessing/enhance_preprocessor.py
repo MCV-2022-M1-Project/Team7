@@ -114,11 +114,13 @@ class ColoredDenoisePreprocessor(Preprocessing):
 
 
 @Registry.register_preprocessing
-class WaveletDenoisePreprocessor(Preprocessing):
-    name: str = "wavelet_visushrink"
+class VisuShrinkDenoisePreprocessor(Preprocessing):
+    name: str = "visushrink_noise_preprocessor"
 
-    def __init__(self, *args, **kwargs) -> None:
-        return None
+    def __init__(self, convert2ycbcr=True, mode='soft', rescale_sigma=True, **kwargs) -> None:
+        self.convert2ycbcr = convert2ycbcr
+        self.mode = mode
+        self.rescale_sigma = rescale_sigma
 
     def run(self, image, **kwargs) -> Dict[str, np.ndarray]:
         """
@@ -137,9 +139,9 @@ class WaveletDenoisePreprocessor(Preprocessing):
         enhanced = image
         if estimate_noise(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)) > 10:
             blur = cv2.medianBlur(image, 3)
-            sigma_est = estimate_sigma(image, channel_axis=-1, average_sigmas=True)
-            enhanced = denoise_wavelet(image, channel_axis=-1, convert2ycbcr=True,
+            sigma_est = estimate_sigma(blur, channel_axis=-1, average_sigmas=True)
+            enhanced = denoise_wavelet(blur, channel_axis=-1, convert2ycbcr=True,
                                        method='VisuShrink', mode='soft',
-                                       sigma=sigma_est / 2, rescale_sigma=True)
+                                       sigma=sigma_est/2, rescale_sigma=True)
 
-        return {"result": enhanced}
+        return {"result": enhanced*255}
