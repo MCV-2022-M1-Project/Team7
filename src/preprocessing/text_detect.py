@@ -492,8 +492,6 @@ class TheMostStupidTextDetector(Preprocessing):
         return {"result": image.copy(), "text_mask": mask, "text_bb": text_blobs, "text": text}
 
 
-
-
 @Registry.register_preprocessing
 class AnywayItsGettingLateTextDetector(Preprocessing):
     name: str = "anyway_text_detector"

@@ -65,8 +65,12 @@ class RetrievalDistCombTask(BaseTask):
 
                     for img in image:
                         output.append(pp.run(img))
+
+                    image = [o["result"] for o in output]
                 else:
-                    output = [pp.run(image)]
+                    o = pp.run(image)
+                    image = o["result"]
+                    output = [o]
 
                 if "bb" in output[0]:
                     images_list = []
@@ -79,12 +83,15 @@ class RetrievalDistCombTask(BaseTask):
                         image = images_list
 
                 if "text_mask" in output[0]:
-                    images = []
+                    images_list = []
 
                     for out in output:
-                        image = out["result"]
+                        img = out["result"]
                         text_mask_pred = out["text_mask"]
-                        images.append((image * (1-(text_mask_pred[:,:,None] / 255))).astype(np.uint8))
+                        images_list.append((img * (1-(text_mask_pred[:,:,None] / 255))).astype(np.uint8))
+
+                    if len(images_list) > 0:
+                        image = images_list
 
                 if "text" in output[0]:
                     for out in output:
