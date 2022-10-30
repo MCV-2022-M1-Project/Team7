@@ -100,9 +100,6 @@ class RetrievalDistCombTask(BaseTask):
                         if self.tokenizer is not None and self.tokenizer.input_type == "str":
                             text_tokens.append(self.tokenizer.tokenize(out["text"])[0])
 
-            if len(images_list) > 0:
-                image = images_list
-
             if type(image) is not list:
                 image = [image]
 
@@ -113,6 +110,10 @@ class RetrievalDistCombTask(BaseTask):
                 feats = np.array(text_tokens)
                 neighs = knn_models[self.tokenizer.name].kneighbors(feats, return_distance=False)
                 ranking = np.array([n.argsort() for n in neighs])
+
+                if self.config.tokenizer.feats_w is None:
+                     self.config.tokenizer.feats_w = 1.0
+
                 rankings.append(ranking * self.config.tokenizer.feats_w)
 
             if self.extractors is not None:
@@ -121,6 +122,10 @@ class RetrievalDistCombTask(BaseTask):
                     neighs = knn_models[extractor.name].kneighbors(feats, return_distance=False)
                     ranking = np.array([n.argsort() for n in neighs])
                     w = [e["feats_w"] for e in self.config.features_extractors if e.name == extractor.name][0]
+
+                    if w is None:
+                        w = 1.0
+
                     rankings.append(ranking * w)
 
             per_image_rankings = []
@@ -134,8 +139,8 @@ class RetrievalDistCombTask(BaseTask):
 
             top_k_pred = [np.argsort(r) for r in per_image_rankings]
 
-            final_output_w1.append([v for v in top_k_pred[0][:10]])
-            final_output_w2.append([[v for v in top_k_pred[i][:10]] for i in range(len(image))])
+            final_output_w1.append([int(v) for v in top_k_pred[0][:10]])
+            final_output_w2.append([[int(v) for v in top_k_pred[i][:10]] for i in range(len(image))])
 
             if not inference_only:
                 for metric in self.metrics:
