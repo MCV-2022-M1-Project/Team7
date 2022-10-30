@@ -32,7 +32,7 @@ class TextDetectionTask(BaseTask):
             image = sample.image
             annotation = sample.annotation
 
-            if self.tokenizer is not None:
+            if self.tokenizer is not None and annotation is not None:
                 annotation_tokenized = [self.tokenizer.tokenize(ann) for ann in annotation]
             
             bb_list = []

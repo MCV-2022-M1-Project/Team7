@@ -20,7 +20,7 @@ def __parse_args() -> argparse.Namespace:
                         help='whether to preload retrieval images in memory (takes some time)')
     parser.add_argument('--output_dir', type=str, default='./output',
                         help='location of the output')
-    parser.add_argument('--config', type=str, default='./config/text_detection.yaml',
+    parser.add_argument('--config', type=str, default='./config/retrieval_bad.yaml',
                         help='location of the configuration file')
     parser.add_argument('--inference_only', action="store_true",
                         help='run inference and skip metrics computation')
@@ -63,11 +63,11 @@ def main(args: argparse.Namespace):
             else:
                 preprocessing = []
 
-            if "features_extractor" in task_config:
-                extractor = Registry.get_features_extractor_instance(
-                    task_config.features_extractor)
+            if "features_extractors" in task_config:
+                extractors = Registry.get_features_extractor_instances(
+                    task_config.features_extractors)
             else:
-                extractor = None
+                extractors = None
 
             if "metrics" in task_config:
                 metrics = Registry.get_metric_instances(task_config.metrics)
@@ -82,7 +82,7 @@ def main(args: argparse.Namespace):
                 args.output_dir,
                 tokenizer,
                 preprocessing,
-                extractor,
+                extractors,
                 metrics,
                 id)
             task.run(args.inference_only)
