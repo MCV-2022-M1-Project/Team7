@@ -3,6 +3,7 @@ import numpy as np
 from typing import Callable, Dict
 from skimage import filters
 from scipy.ndimage import gaussian_filter
+from scipy.spatial import distance as dist
 
 from src.common.utils import TO_COLOR_SPACE
 from src.preprocessing.base import Preprocessing
@@ -575,6 +576,112 @@ class PaintThePaintingAdaptativeMaskPreprocessor(Preprocessing):
         painting_bbs = [coords for _, coords in paintings]
         painting_bbs = sorted(painting_bbs, key=lambda x: x[1])
         return {"result": image.copy(), "mask":  final_mask, "bb": painting_bbs}
+
+
+@Registry.register_preprocessing
+class LaplacianMaskPreprocessor(Preprocessing):
+    name: str = "laplacian_mask_preprocessor"  
+
+    def __init__(self, min_area: float = 0.05,  **kwargs) -> None:
+        pass
+
+    def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
+        '''
+
+        run(**kwargs) takes an image as an imput and filters low frequency values
+        using the fourier transform.
+        Args:
+            Image: Sample image to preprocess
+
+        Returns:
+            Dict: {
+                "ouput": Processed image cropped with mask
+                "mask": mask obtained with method 
+            }
+
+        '''
+        original_shape = image.shape[:2]
+        (height, width) = original_shape
+
+        hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+        h, s, v = cv2.split(hsv)
+
+        # diff_image = (rgb*2 - v[:,:,None]).mean(axis=-1)
+        diff_image = s
+
+        diff_image = diff_image - diff_image.min()
+        diff_image = diff_image / diff_image.max()
+        diff_image = (diff_image * 255).astype(np.uint8)
+
+
+        diff_image = cv2.GaussianBlur(diff_image, (5, 5), 0)
+
+        laplacian_kernel = np.array([[-1,-1,-1],
+                                    [-1, 8,-1],
+                                    [-1,-1,-1]])
+        diff_image = cv2.filter2D(src=diff_image, ddepth=-1, kernel=laplacian_kernel).astype(np.uint8)
+
+        diff_image = (cv2.adaptiveThreshold(diff_image, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                            cv2.THRESH_BINARY, 11, 2) == 0).astype(np.uint8)
+
+        kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 1))
+        kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 7))
+        diff_image = cv2.morphologyEx(diff_image, cv2.MORPH_DILATE, kernel_v, iterations=1)
+        diff_image = cv2.morphologyEx(diff_image, cv2.MORPH_DILATE, kernel_h, iterations=1)
+
+        min_height = int(original_shape[0] * 0.01)
+        min_width = int(original_shape[1] * 0.01)
+        kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (1, min_height))
+        kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (min_width, 1))
+        diff_image = cv2.morphologyEx(diff_image, cv2.MORPH_OPEN, kernel_v, iterations=1)
+        diff_image = cv2.morphologyEx(diff_image, cv2.MORPH_OPEN, kernel_h, iterations=1)
+
+        contours, hierarchy = cv2.findContours(diff_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        painting_bbs = []
+        polygons = []
+        filtered_contours = []
+        min_area = original_shape[0] * original_shape[1] * 0.05
+        min_height = original_shape[0] * 0.1
+        min_width = original_shape[1] * 0.1
+
+        for contour in contours:
+            x, y, h, w = cv2.boundingRect(contour)
+            # contour_area = cv2.contourArea(contour)
+            contour_area = w * h
+
+            if contour_area < min_area or h < min_height or w < min_width:
+                continue
+            
+            painting_bbs.append((x, y, x+h, y+w))
+
+            hull = cv2.convexHull(contour)
+            polygons.append(hull)
+            filtered_contours.append(contour)
+
+        mask = np.zeros_like(diff_image)
+        final_polygons = []
+
+        for polygon in polygons:
+            # Black image same size as original input:
+            hullImg = np.zeros((height, width), dtype=np.uint8)
+
+            # Draw the points:
+            cv2.drawContours(hullImg, [polygon], 0, 255, 2)
+
+            hull = [tuple(p[0]) for p in polygon]
+
+            # Find all the corners
+            tr = max(hull, key=lambda x: x[0] - x[1])
+            tl = min(hull, key=lambda x: x[0] + x[1])
+            br = max(hull, key=lambda x: x[0] + x[1])
+            bl = min(hull, key=lambda x: x[0] - x[1])
+
+            corner_list = np.array([tl, tr, br, bl])
+
+            final_polygons.append(corner_list)
+            mask = cv2.fillConvexPoly(mask, np.array(corner_list, 'int32'), 255)
+
+        return {"result": image.copy(), "mask":  mask > 0, "bb": painting_bbs}
 
 
 @Registry.register_preprocessing
