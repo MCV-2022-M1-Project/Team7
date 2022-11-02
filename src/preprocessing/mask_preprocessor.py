@@ -585,6 +585,22 @@ class LaplacianMaskPreprocessor(Preprocessing):
     def __init__(self, min_area: float = 0.05,  **kwargs) -> None:
         pass
 
+    def painter(self, image):
+        image_bg = image.copy()
+        last_col = image.shape[1] - 1
+
+        for i in range(image.shape[0]):
+            if image[i, 0] == 0:
+                cv2.floodFill(image_bg, None, (0, i), 1)
+                break
+            if image[i, last_col] == 0:
+                cv2.floodFill(image_bg, None, (last_col, i), 1)
+                break
+
+        new_image = image - image_bg
+        new_image = (new_image == 0).astype(np.uint8)
+        return new_image
+
     def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
         '''
 
@@ -614,7 +630,7 @@ class LaplacianMaskPreprocessor(Preprocessing):
         diff_image = (diff_image * 255).astype(np.uint8)
 
 
-        diff_image = cv2.GaussianBlur(diff_image, (5, 5), 0)
+        diff_image = cv2.GaussianBlur(diff_image, (7, 7), 0)
 
         laplacian_kernel = np.array([[-1,-1,-1],
                                     [-1, 8,-1],
@@ -629,10 +645,19 @@ class LaplacianMaskPreprocessor(Preprocessing):
         diff_image = cv2.morphologyEx(diff_image, cv2.MORPH_DILATE, kernel_v, iterations=1)
         diff_image = cv2.morphologyEx(diff_image, cv2.MORPH_DILATE, kernel_h, iterations=1)
 
-        min_height = int(original_shape[0] * 0.01)
-        min_width = int(original_shape[1] * 0.01)
-        kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (1, min_height))
-        kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (min_width, 1))
+        # min_x = int(original_shape[0] * 0.01)
+        # min_y = int(original_shape[1] * 0.01)
+        # kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (1, min_x))
+        # kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (min_y, 1))
+        # diff_image = cv2.morphologyEx(diff_image, cv2.MORPH_OPEN, kernel_v, iterations=1)
+        # diff_image = cv2.morphologyEx(diff_image, cv2.MORPH_OPEN, kernel_h, iterations=1)
+
+        diff_image = self.painter(diff_image)
+
+        min_x = int(original_shape[0] * 0.1)
+        min_y = int(original_shape[1] * 0.1)
+        kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (1, min_x))
+        kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (min_y, 1))
         diff_image = cv2.morphologyEx(diff_image, cv2.MORPH_OPEN, kernel_v, iterations=1)
         diff_image = cv2.morphologyEx(diff_image, cv2.MORPH_OPEN, kernel_h, iterations=1)
 
