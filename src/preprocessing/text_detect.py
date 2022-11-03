@@ -8,6 +8,8 @@ import os
 from src.common.registry import Registry
 from src.common.utils import *
 from src.preprocessing.base import Preprocessing
+from pytesseract import Output
+
 
 def visual_templates_loader() -> np.ndarray:
     path = '/'.join(__file__.split('/')[:-1])
@@ -586,6 +588,20 @@ class AnywayItsGettingLateTextDetector(Preprocessing):
 
         return {"result": image.copy(), "text_mask": mask, "text_bb": text_blobs, "text": text}
 
+def text_recognition(bbx):
+    
+    if not bbx.shape[0]*bbx.shape[1]: return ""
+    d = pytesseract.image_to_data(bbx, lang = 'cat', nice = 5, output_type=Output.DICT)
+    n_boxes = len(d['level'])
+    text = []
+    
+    for i in range(n_boxes):
+
+        detection = d['text'][i]
+        if len(detection)!=0: text.append(detection)
+    
+    return ' '.join(text)
+
 
 @Registry.register_preprocessing
 class HarrisTextDetector(Preprocessing):
@@ -602,7 +618,9 @@ class HarrisTextDetector(Preprocessing):
 
     def run(self,  image: np.ndarray, **kwargs) -> Dict[str, np.ndarray]:
 
-        res = cv2.cornerHarris(image, self.block_size, self.ksize_harris,0.0)
+        image_gs = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        res = cv2.cornerHarris(image_gs, self.block_size, self.ksize_harris,0.0)
         res = cv2.blur(res, [self.blur_size]*2)
         res = 255 * (res - res.min())/(res.max() - res.min())
         thresh = cv2.adaptiveThreshold(res.astype(np.uint8), 255,
@@ -614,11 +632,21 @@ class HarrisTextDetector(Preprocessing):
         thresh = cv2.adaptiveThreshold(erosion.astype(np.uint8), 255,
         cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 21, 10)
         
-        black = np.zeros_like(image)
+        black = np.zeros_like(image_gs)
         contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        
+        total_contours = None
         for c in contours:
             x,y,w,h = cv2.boundingRect(c)
             if self.min_area > h*w: continue 
-            black = cv2.rectangle(black, (x, y), (x + w, y + h), (255, 255, 255), -1)
+            if not isinstance(total_contours, np.ndarray): total_contours = c
+            else: total_contours = np.vstack([total_contours, c])
+        x,y,w,h = cv2.boundingRect(total_contours)
+        black = cv2.rectangle(black, (x, y), (x + w, y + h), (255, 255, 255), -1)
 
-        raise NotImplementedError("What about returning something you jerk")
+        return {
+            "result": image.copy(),
+            "text_mask": black != 0,
+            "text_bb": [(x, y, x+w, y+h)],
+            "text": text_recognition(image[y:y+h, x:x+w])
+        }

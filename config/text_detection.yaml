@@ -15,7 +15,7 @@ tasks:
       # - name: fourier_mask_preprocessor
       #   color_space: hsv
       #   channel: 1
-      - name: text_detector_wo_mask
+      - name: harris_text_detector
 
     datasets:
       - qsd1_w2
