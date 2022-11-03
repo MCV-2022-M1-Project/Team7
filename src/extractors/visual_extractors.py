@@ -8,6 +8,7 @@ from scipy import spatial
 from sklearn.metrics import euclidean_distances
 from sympy import euler
 from sklearn.cluster import KMeans
+import multiprocessing as mp
 
 from src.common.utils import image_normalize
 from src.common.registry import Registry
@@ -112,4 +113,43 @@ class RandomFeaturesExtractor(FeaturesExtractor):
 
         return {
             "result": np.random.rand(len(images), 10),
+        }
+    
+
+@Registry.register_features_extractor
+class SIFTExtractor(FeaturesExtractor):
+    name: str = "sift_features_extractor"
+    def __init__(self, n_keypoints = 3, *args, **kwargs) -> None:
+        self.n_keypoints = n_keypoints
+        self.sift_size = 128
+        self.descriptor_size = n_keypoints * self.sift_size
+        self.n_threads = 4
+    
+    def process_imgs_mp(self, images, sift, features, k):
+        for n in range(k, len(images), self.n_threads):
+
+            image = images[n]
+            keypoints, descriptors = sift.detectAndCompute(image, None)
+
+            if len(keypoints) > self.n_keypoints: descriptors = descriptors[:self.n_keypoints, :]
+            left = self.n_keypoints if not isinstance(descriptors, np.ndarray) else self.n_keypoints - len(descriptors)
+            if left:
+                fill = np.zeros(left *self.sift_size )
+                if isinstance(descriptors, np.ndarray): fill = np.hstack((descriptors.reshape(-1), fill))
+                features[n] = fill
+            else: features[n]= descriptors.reshape(-1)
+            if len(features[n]) != self.descriptor_size: print(descriptors)
+
+    def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
+        sift = cv2.SIFT_create(self.n_keypoints)
+
+        mp_manager = mp.Manager()
+        features = mp_manager.list([None for i in range(len(images))])
+
+        threads = [mp.Process(target=self.process_imgs_mp, args=(images, sift, features, i)) for i in range(self.n_threads)]
+        [t.start() for t in threads]
+        [t.join() for t in threads]
+
+        return {
+            "result": list(features),
         }
