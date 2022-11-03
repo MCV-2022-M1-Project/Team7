@@ -119,11 +119,11 @@ class RandomFeaturesExtractor(FeaturesExtractor):
 @Registry.register_features_extractor
 class SIFTExtractor(FeaturesExtractor):
     name: str = "sift_features_extractor"
-    def __init__(self, n_keypoints = 3, *args, **kwargs) -> None:
+    def __init__(self, n_keypoints = 3, n_threads = 4, *args, **kwargs) -> None:
         self.n_keypoints = n_keypoints
         self.sift_size = 128
         self.descriptor_size = n_keypoints * self.sift_size
-        self.n_threads = 4
+        self.n_threads = n_threads
     
     def process_imgs_mp(self, images, sift, features, k):
         for n in range(k, len(images), self.n_threads):
