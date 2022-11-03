@@ -3,11 +3,17 @@ import numpy as np
 import pytesseract
 import itertools
 from typing import Dict
+import os
 
 from src.common.registry import Registry
 from src.common.utils import *
 from src.preprocessing.base import Preprocessing
 
+def visual_templates_loader() -> np.ndarray:
+    path = '/'.join(__file__.split('/')[:-1])
+    impath = f"{path}/../../tools/abc"
+    files = os.listdir(impath)
+    for template in filter(lambda x: '.png' in x, files): yield cv2.imread(f"{impath}/{template}", cv2.IMREAD_GRAYSCALE)
 
 @Registry.register_preprocessing
 class MorphTextDetector(Preprocessing):
