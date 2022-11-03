@@ -433,7 +433,6 @@ class TheMostStupidTextDetector(Preprocessing):
 
                 if contour_area < min_area or contour_area > max_area:
                     continue
-                
                 x, y, w, h = cv2.boundingRect(contour)
                 aspect_ratio = w/h
                 rectanglessness = contour_area / (w * h)
@@ -586,3 +585,40 @@ class AnywayItsGettingLateTextDetector(Preprocessing):
                 break
 
         return {"result": image.copy(), "text_mask": mask, "text_bb": text_blobs, "text": text}
+
+
+@Registry.register_preprocessing
+class HarrisTextDetector(Preprocessing):
+    name: str = "harris_text_detector"
+
+    def __init__(self, blur_size = 10, k_size = 5, block_size = 2, ksize_harris = 3, min_area = 3e3, *args, **kwargs) -> None:
+
+        self.blur_size = blur_size
+        self.k_size = k_size
+        self.block_size = block_size
+        self.ksize_harris = ksize_harris
+        self.min_area = min_area
+
+
+    def run(self,  image: np.ndarray, **kwargs) -> Dict[str, np.ndarray]:
+
+        res = cv2.cornerHarris(image, self.block_size, self.ksize_harris,0.0)
+        res = cv2.blur(res, [self.blur_size]*2)
+        res = 255 * (res - res.min())/(res.max() - res.min())
+        thresh = cv2.adaptiveThreshold(res.astype(np.uint8), 255,
+            cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 21, 10)
+        
+        
+        kernel = np.ones([self.k_size]*2,np.uint8)
+        erosion = cv2.erode(thresh,kernel,iterations = 1)
+        thresh = cv2.adaptiveThreshold(erosion.astype(np.uint8), 255,
+        cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 21, 10)
+        
+        black = np.zeros_like(image)
+        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        for c in contours:
+            x,y,w,h = cv2.boundingRect(c)
+            if self.min_area > h*w: continue 
+            black = cv2.rectangle(black, (x, y), (x + w, y + h), (255, 255, 255), -1)
+
+        raise NotImplementedError("What about returning something you jerk")
