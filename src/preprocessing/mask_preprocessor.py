@@ -5,7 +5,7 @@ from skimage import filters
 from scipy.ndimage import gaussian_filter
 from scipy.spatial import distance as dist
 
-from src.common.utils import TO_COLOR_SPACE
+from src.common.utils import TO_COLOR_SPACE, image_resize
 from src.preprocessing.base import Preprocessing
 from src.common.registry import Registry
 
@@ -610,7 +610,6 @@ class LaplacianMaskPreprocessor(Preprocessing):
         diff_image = diff_image / diff_image.max()
         diff_image = (diff_image * 255).astype(np.uint8)
 
-
         diff_image = cv2.GaussianBlur(diff_image, (5, 5), 0)
 
         laplacian_kernel = np.array([[-1,-1,-1],
@@ -642,14 +641,14 @@ class LaplacianMaskPreprocessor(Preprocessing):
         min_width = original_shape[1] * 0.1
 
         for contour in contours:
-            x, y, h, w = cv2.boundingRect(contour)
+            y, x, h, w = cv2.boundingRect(contour)
             # contour_area = cv2.contourArea(contour)
             contour_area = w * h
 
             if contour_area < min_area or h < min_height or w < min_width:
                 continue
             
-            painting_bbs.append((x, y, x+h, y+w))
+            painting_bbs.append((x, y, x+w, y+h))
 
             hull = cv2.convexHull(contour)
             polygons.append(hull)
@@ -682,15 +681,148 @@ class LaplacianMaskPreprocessor(Preprocessing):
 
 
 @Registry.register_preprocessing
+class HoughMaskPreprocessor(Preprocessing):
+    name: str = "hough_mask_preprocessor"  
+
+    def __init__(self, min_area: float = 0.05,  **kwargs) -> None:
+        pass
+
+    def painter(self, image):
+        image_bg = image.copy()
+        last_col = image.shape[1] - 1
+
+        for i in range(0, image.shape[0], image.shape[0] // 8):
+            if image[i, 0] == 0:
+                cv2.floodFill(image_bg, None, (0, i), 1)
+            if image[i, last_col] == 0:
+                cv2.floodFill(image_bg, None, (last_col, i), 1)
+
+        new_image = image - image_bg
+        new_image = (new_image == 0).astype(np.uint8)
+        return new_image
+
+    def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
+        '''
+        run(**kwargs) takes an image as an imput and filters low frequency values
+        using the fourier transform.
+        Args:
+            Image: Sample image to preprocess
+        Returns:
+            Dict: {
+                "ouput": Processed image cropped with mask
+                "mask": mask obtained with method 
+            }
+        '''
+        original_shape = image.shape[:2]
+        (height, width) = original_shape
+
+        image_resized = image_resize(image, 1000, 1000)
+        resized_shape = image_resized.shape[:2]
+
+        hsv = cv2.cvtColor(image_resized, cv2.COLOR_RGB2HSV)
+        h, s, v = cv2.split(hsv)
+
+        # diff_image = (rgb*2 - v[:,:,None]).mean(axis=-1)
+        diff_image = s
+
+        diff_image = diff_image - diff_image.min()
+        diff_image = diff_image / diff_image.max()
+        diff_image = (diff_image * 255).astype(np.uint8)
+
+        diff_image = cv2.GaussianBlur(diff_image, (7, 7), 0)
+
+        v = np.median(diff_image)
+        # apply automatic Canny edge detection using the computed median
+        sigma=0.3
+        lower = int(max(0, (1.0 - sigma) * v))
+        upper = int(min(255, (1.0 + sigma) * v))
+        edges = cv2.Canny(diff_image, lower, upper)
+
+        thr = filters.threshold_otsu(edges)
+        edges = (edges > thr).astype(np.uint8)
+
+        mask = np.zeros_like(diff_image)
+        max_line_gap = int(resized_shape[1] * 0.05)
+        linesP = cv2.HoughLinesP(edges, 1, np.pi / 180, 50, minLineLength=20, maxLineGap=max_line_gap)   
+
+        if linesP is not None:
+            for i in range(0, len(linesP)):
+                l = linesP[i][0]
+                cv2.line(mask, (l[0], l[1]), (l[2], l[3]), 255, 3, cv2.LINE_AA)
+
+        kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 7))
+        kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 1))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_v, iterations=1)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_h, iterations=1)
+
+        mask = self.painter(mask)
+
+        min_x = int(resized_shape[0] * 0.1)
+        min_y = int(resized_shape[1] * 0.1)
+        kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (1, min_x))
+        kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (min_y, 1))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_v, iterations=1)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_h, iterations=1)
+
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        painting_bbs = []
+        polygons = []
+        min_area = resized_shape[0] * resized_shape[1] * 0.05
+        min_height = resized_shape[0] * 0.1
+        min_width = resized_shape[1] * 0.1
+
+        for contour in contours:
+            x, y, h, w = cv2.boundingRect(contour)
+            # contour_area = cv2.contourArea(contour)
+            contour_area = w * h
+
+            if contour_area < min_area or h < min_height or w < min_width:
+                continue
+            
+            painting_bbs.append((x, y, x+h, y+w))
+
+            hull = cv2.convexHull(contour)
+            polygons.append(hull)
+
+        mask = np.zeros_like(diff_image)
+        final_polygons = []
+
+        for polygon in polygons:
+            # Black image same size as original input:
+            hullImg = np.zeros((height, width), dtype=np.uint8)
+
+            # Draw the points:
+            cv2.drawContours(hullImg, [polygon], 0, 255, 2)
+
+            hull = [tuple(p[0]) for p in polygon]
+
+            # Find all the corners
+            tr = max(hull, key=lambda x: x[0] - x[1])
+            tl = min(hull, key=lambda x: x[0] + x[1])
+            br = max(hull, key=lambda x: x[0] + x[1])
+            bl = min(hull, key=lambda x: x[0] - x[1])
+
+            corner_list = np.array([tl, tr, br, bl])
+
+            final_polygons.append(corner_list)
+            mask = cv2.fillConvexPoly(mask, np.array(corner_list, 'int32'), 255)
+
+        x_scaling = original_shape[0] / resized_shape[0]
+        y_scaling = original_shape[1] / resized_shape[1]
+        painting_bbs = [(int(x_min * x_scaling), int(y_min * y_scaling), int(x_max * x_scaling),
+                     int(y_max * y_scaling)) for x_min, y_min, x_max, y_max in painting_bbs]
+        mask = cv2.resize(mask, (original_shape[1], original_shape[0]))
+
+        return {"result": image.copy(), "mask":  mask > 0, "bb": painting_bbs}
+
+
+@Registry.register_preprocessing
 class FourierMaskPreprocessor(Preprocessing):
     name: str = "fourier_mask_preprocessor"  
 
-    def __init__(self, color_space: str = "hsv", channel: int = 0, metric: str = "std", thr_global: float = 20, fill_holes: bool = True,  **kwargs) -> None:
+    def __init__(self, color_space: str = "hsv", channel: int = 1 , **kwargs) -> None:
         self.color_space = TO_COLOR_SPACE[color_space]
         self.channel = channel
-        self.metric = METRICS[metric]
-        self.thr_global = thr_global
-        self.fill_holes = fill_holes
 
     def painter(self, image):
         image_bg = image.copy()
