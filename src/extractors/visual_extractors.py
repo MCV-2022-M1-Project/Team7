@@ -115,7 +115,7 @@ class SIFTExtractor(FeaturesExtractor):
 
     def process_imgs_mp(self, data):
         image = data[0]
-        sift = cv2.SIFT_create(self.n_keypoints)
+        sift = cv2.SIFT_create()
 
         keypoints, descriptors = sift.detectAndCompute(image, None)
 

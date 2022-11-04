@@ -4,6 +4,7 @@ import pytesseract
 import itertools
 from typing import Dict
 import os
+import matplotlib.pyplot as plt
 
 from src.common.registry import Registry
 from src.common.utils import *
@@ -603,6 +604,7 @@ def text_recognition(bbx):
     return ' '.join(text)
 
 
+
 @Registry.register_preprocessing
 class HarrisTextDetector(Preprocessing):
     name: str = "harris_text_detector"
@@ -620,7 +622,7 @@ class HarrisTextDetector(Preprocessing):
 
         image_gs = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        res = cv2.cornerHarris(image_gs, self.block_size, self.ksize_harris,0.0)
+        res = cv2.cornerHarris(image_gs, self.block_size, self.ksize_harris, 0.0)
         res = cv2.blur(res, [self.blur_size]*2)
         res = 255 * (res - res.min())/(res.max() - res.min())
         thresh = cv2.adaptiveThreshold(res.astype(np.uint8), 255,
@@ -638,11 +640,12 @@ class HarrisTextDetector(Preprocessing):
         total_contours = None
         for c in contours:
             x,y,w,h = cv2.boundingRect(c)
-            if self.min_area > h*w: continue 
+            if self.min_area > h*w or (w<=h): continue 
             if not isinstance(total_contours, np.ndarray): total_contours = c
             else: total_contours = np.vstack([total_contours, c])
-        x,y,w,h = cv2.boundingRect(total_contours)
-        black = cv2.rectangle(black, (x, y), (x + w, y + h), (255, 255, 255), -1)
+            black = cv2.rectangle(black, (x, y), (x + w, y + h), (255, 255, 255), -1)
+
+        x,y,w,h = cv2.boundingRect(total_contours) # This Way Of Doing Boxes Suck So Hard It Should Not Be Needed
 
         return {
             "result": image.copy(),
