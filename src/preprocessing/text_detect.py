@@ -609,7 +609,7 @@ def text_recognition(bbx):
 class HarrisTextDetector(Preprocessing):
     name: str = "harris_text_detector"
 
-    def __init__(self, blur_size = 10, k_size = 5, block_size = 2, ksize_harris = 3, min_area = 3e3, *args, **kwargs) -> None:
+    def __init__(self, blur_size = 10, k_size = 5, block_size = 10, ksize_harris = 3, min_area = 3e3, *args, **kwargs) -> None:
 
         self.blur_size = blur_size
         self.k_size = k_size
@@ -638,13 +638,16 @@ class HarrisTextDetector(Preprocessing):
         contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         
         total_contours = None
+        bounding = []
         for c in contours:
             x,y,w,h = cv2.boundingRect(c)
-            if self.min_area > h*w or (w<=h): continue 
+            if self.min_area > h*w or (w/h < 2.5): continue 
             if not isinstance(total_contours, np.ndarray): total_contours = c
             else: total_contours = np.vstack([total_contours, c])
             black = cv2.rectangle(black, (x, y), (x + w, y + h), (255, 255, 255), -1)
+            bounding.append((x, y, w, h))
 
+        #x, y, w, h = max(bounding, key = lambda x: x[-1] * x[-2])
         x,y,w,h = cv2.boundingRect(total_contours) # This Way Of Doing Boxes Suck So Hard It Should Not Be Needed
 
         return {
