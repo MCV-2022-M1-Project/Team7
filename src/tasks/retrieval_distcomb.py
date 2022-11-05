@@ -21,7 +21,6 @@ class RetrievalDistCombTask(BaseTask):
 
     def run(self, inference_only: bool = False) -> None:
         """
-
         """
         if self.tokenizer is not None:
             logging.info("Building tokenizer vocabulary...")
@@ -49,7 +48,7 @@ class RetrievalDistCombTask(BaseTask):
                 feats = extractor.run(
                     self.retrieval_dataset.images, tokenizer=self.tokenizer)["result"]
 
-                if extractor.name != "sift_features_extractor":
+                if extractor.name != "sift_features_extractor" and extractor.name != "orb_features_extractor":
                     distance_config = [
                         e["distance"] for e in self.config.features_extractors if e.name == extractor.name][0]
                     distance = Registry.get_distance_instance(distance_config)
@@ -137,7 +136,7 @@ class RetrievalDistCombTask(BaseTask):
                     feats = extractor.run(
                         image, tokenizer=self.tokenizer)["result"]
 
-                    if extractor.name != "sift_features_extractor":
+                    if extractor.name != "sift_features_extractor" and extractor.name != "orb_features_extractor":
                         neighs = knn_models[extractor.name].kneighbors(
                             feats, return_distance=False)
                         ranking = np.array([n.argsort() for n in neighs])
