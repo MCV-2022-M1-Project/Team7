@@ -158,3 +158,18 @@ class SIFTExtractor(FeaturesExtractor):
         return {
             "result": features,
         }
+@Registry.register_features_extractor
+class ORBExtractor(FeaturesExtractor):
+    name: str = "orb_features_extractor"
+    def __init__(self, *args, **kwargs)->None:
+        pass
+    def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
+        result = []
+        orb = cv2.ORB_create()
+        for image in images:
+            kp, des = orb.detectAndCompute(image,None)
+            #print(kp,des)
+            if(des  is not None):
+                result.append(des.reshape(-1))
+                print(len(des))
+        return {"result": result}
