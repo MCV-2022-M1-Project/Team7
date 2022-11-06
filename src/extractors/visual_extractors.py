@@ -107,15 +107,19 @@ class RandomFeaturesExtractor(FeaturesExtractor):
 class SIFTExtractor(FeaturesExtractor):
     name: str = "sift_features_extractor"
 
-    def __init__(self, n_keypoints=40, n_threads=4, *args, **kwargs) -> None:
+    def __init__(self, n_keypoints=None, n_threads=2, scale = 3, *args, **kwargs) -> None:
         self.n_keypoints = n_keypoints
         self.sift_size = 128
-        self.descriptor_size = n_keypoints * self.sift_size
         self.n_threads = n_threads
+        self.scale = scale
 
     def process_imgs_mp(self, data):
         image = data[0]
-        sift = cv2.SIFT_create()
+        if isinstance(self.n_keypoints, int): sift = cv2.SIFT_create(self.n_keypoints)
+        else: sift = cv2.SIFT_create()
+
+        image = cv2.resize(image, (image.shape[0] // self.scale, image.shape[1] // self.scale))
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         keypoints, descriptors = sift.detectAndCompute(image, None)
 
@@ -161,15 +165,20 @@ class SIFTExtractor(FeaturesExtractor):
 @Registry.register_features_extractor
 class ORBExtractor(FeaturesExtractor):
     name: str = "orb_features_extractor"
-    def __init__(self, *args, **kwargs)->None:
-        pass
+    def __init__(self, n_keypoints=128, n_threads=2, scale = 3, *args, **kwargs)->None:
+        self.n_keypoints = n_keypoints
+        self.scale = scale
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         result = []
-        orb = cv2.ORB_create()
+        if isinstance(self.n_keypoints, int): orb = cv2.ORB_create(self.n_keypoints)
+        else: orb = cv2.ORB_create()        
         for image in images:
+            
+            image = cv2.resize(image, (image.shape[0] // self.scale, image.shape[1] // self.scale))
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
             kp, des = orb.detectAndCompute(image,None)
             #print(kp,des)
             if(des  is not None):
                 result.append(des.reshape(-1))
-                print(len(des))
         return {"result": result}
