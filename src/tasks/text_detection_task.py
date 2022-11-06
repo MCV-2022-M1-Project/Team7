@@ -71,8 +71,6 @@ class TextDetectionTask(BaseTask):
                     for out in output:
                         if len(out["text_bb"]) > 0:
                             text_boxes_pred.append(out["text_bb"][0])
-                    
-                    final_output.append(text_boxes_pred)
 
                 if "text" in output[0]:
                     for out in output:
@@ -89,6 +87,8 @@ class TextDetectionTask(BaseTask):
                         image_bb[0] + text_bb[3],
                     ) for image_bb, text_bb in zip(bb_list, text_boxes_pred)]
                 text_boxes_pred = trans_corrected_bbs
+
+            final_output.append(text_boxes_pred)
 
             if not inference_only:
                 for metric in self.metrics:
