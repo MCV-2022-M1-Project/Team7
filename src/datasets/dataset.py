@@ -5,7 +5,6 @@ import cv2
 import pickle
 from typing import List, Optional, Tuple
 from glob import glob
-
 from dataclasses import dataclass
 
 
@@ -92,7 +91,7 @@ class Dataset:
         if mask is not None:
             return mask
 
-        mask = cv2.imread(self.__mask_paths[id], cv2.IMREAD_COLOR)
+        mask = cv2.imread(self.__mask_paths[id], cv2.IMREAD_GRAYSCALE)
         self.__masks[id] = mask
         return mask
 

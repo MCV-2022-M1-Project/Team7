@@ -64,31 +64,35 @@ class RetrievalDistCombTask(BaseTask):
         logging.info("Carrying out the task...")
 
         for sample in tqdm(self.query_dataset):
-            image = sample.image
+            image = [sample.image]
             images_list = []
             bb_list = []
             text_transcription = []
             text_tokens = []
 
+            # image = []
+            # contours, _ = cv2.findContours(self.query_dataset[sample.id].mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            # for contour in contours:
+            #     x, y, w, h = cv2.boundingRect(contour)
+            #     image.append(sample.image[y:y+h, x:x+w])
+
+            # if len(image) == 0:
+            #     image = [sample.image]
+
             for pp in self.preprocessing:
-                if type(image) is list:
-                    output = []
+                output = []
 
-                    for img in image:
-                        output.append(pp.run(img))
+                for img in image:
+                    output.append(pp.run(img))
 
-                    image = [o["result"] for o in output]
-                else:
-                    o = pp.run(image)
-                    image = o["result"]
-                    output = [o]
+                image = [o["result"] for o in output]
 
                 if "bb" in output[0]:
                     images_list = []
                     bb_list = output[0]["bb"]
 
                     for bb in bb_list:
-                        images_list.append(image[bb[0]:bb[2], bb[1]:bb[3]])
+                        images_list.append(image[0][bb[0]:bb[2], bb[1]:bb[3]])
 
                     if len(images_list) > 0:
                         image = images_list
@@ -113,10 +117,8 @@ class RetrievalDistCombTask(BaseTask):
                             text_tokens.append(
                                 self.tokenizer.tokenize(out["text"])[0])
 
-            if type(image) is not list:
-                image = [image]
-
             rankings = []
+            in_database = [0 for _ in range(len(image))]
 
             if self.tokenizer is not None and self.tokenizer.input_type == "str":
                 assert len(
@@ -133,47 +135,54 @@ class RetrievalDistCombTask(BaseTask):
 
             if self.extractors is not None:
                 for extractor in self.extractors:
+                    extractor_config = [
+                        e for e in self.config.features_extractors if e.name == extractor.name][0]
                     feats = extractor.run(
                         image, tokenizer=self.tokenizer)["result"]
 
                     if not extractor.returns_keypoints:
-                        neighs = knn_models[extractor.name].kneighbors(
-                            feats, return_distance=False)
+                        dists, neighs = knn_models[extractor.name].kneighbors(
+                            feats, return_distance=True)
                         ranking = np.array([n.argsort() for n in neighs])
+
+                        for i, dist in enumerate(dists):
+                            # dist = dist / dist.max()
+                            # dist = np.tanh(dist)
+                            # dist = 1/(1 + np.exp(-dist))
+
+                            if dist[0] <= extractor_config.distance.in_db_thr:
+                                in_database[i] += 1
+                        
                     else:
                         # index_params = dict(algorithm=1, trees=5)
                         # search_params = dict(checks=50)
-                        # flann = cv2.FlannBasedMatcher(
+                        # matcher = cv2.FlannBasedMatcher(
                         #     index_params, search_params)
+                        matcher = cv2.BFMatcher()
                         ranking = []
-
-                        for query_feat in feats:
+                        
+                        for i, query_feat in enumerate(feats):
                             n_matches_per_sample = []
 
                             for retr_feat in sift_features:
-                                bf = cv2.BFMatcher()
-                                matches = bf.knnMatch(query_feat, retr_feat, k=2)
+                                try:
+                                    matches = matcher.knnMatch(query_feat, retr_feat, k=2)
+                                except:
+                                    matches = [(0, )]
 
                                 if len(matches[0]) == 1:
                                     n_matches_per_sample.append(0)
                                     continue
 
-                                # for m, n in flann.knnMatch(query_feat, retr_feat, k=2):
-                                #     if m.distance < 0.7*n.distance:
-                                #         matches.append(m)
-
-                                n_matches = len([m for m, n in matches if m.distance < 0.7*n.distance])
+                                n_matches = len([m for m, n in matches if m.distance < extractor_config.quality_thr*n.distance])
                                 n_matches_per_sample.append(n_matches)
                             
                             ranking.append(np.array(n_matches_per_sample).argsort()[::-1].argsort())
 
-                        ranking = np.array(ranking)
+                            if min(n_matches_per_sample) >= extractor_config.matches_thr:
+                                in_database[i] += 1
 
-                        # ranking = np.array([
-                        #     np.array([len([m for m, n in flann.knnMatch(query_feat, retr_feat, k=2) if m.distance < 0.7*n.distance])
-                        #               for retr_feat in sift_features]).argsort()[::-1].argsort()
-                        #     for query_feat in feats
-                        # ])
+                        ranking = np.array(ranking)
 
                     w = [e["feats_w"]
                          for e in self.config.features_extractors if e.name == extractor.name][0]
@@ -192,7 +201,15 @@ class RetrievalDistCombTask(BaseTask):
                     else:
                         per_image_rankings[i] += r
 
-            top_k_pred = [np.argsort(r) for r in per_image_rankings]
+            top_k_pred = []
+
+            for i, r in enumerate(per_image_rankings): 
+                if in_database[i] < len(self.extractors) / 2:
+                    t = [-1]
+                else:
+                    t = np.argsort(r)
+
+                top_k_pred.append(t)
 
             final_output_w1.append([int(v) for v in top_k_pred[0][:10]])
             final_output_w2.append(
