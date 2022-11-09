@@ -132,7 +132,7 @@ class F1(Metric):
                      ).sum()/(predictions.sum()+1e-8)
         recall = ((predictions == 1) & (ground_truth == 1)).sum() / \
             (ground_truth.sum()+1e-8)
-        return 2*recall*precision/(recall+precision)
+        return 2*recall*precision/(recall+precision+1e-5)
 
 
 @Registry.register_metric

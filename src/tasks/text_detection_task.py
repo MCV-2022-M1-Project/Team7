@@ -80,12 +80,12 @@ class TextDetectionTask(BaseTask):
                             text_tokens.append(self.tokenizer.tokenize(out["text"])[0])
 
             if len(bb_list) > 0:
-                trans_corrected_bbs = [(
+                trans_corrected_bbs = [[
                         image_bb[1] + text_bb[0],
                         image_bb[0] + text_bb[1],
                         image_bb[1] + text_bb[2],
                         image_bb[0] + text_bb[3],
-                    ) for image_bb, text_bb in zip(bb_list, text_boxes_pred)]
+                    ] for image_bb, text_bb in zip(bb_list, text_boxes_pred)]
                 text_boxes_pred = trans_corrected_bbs
 
             final_output.append(text_boxes_pred)
