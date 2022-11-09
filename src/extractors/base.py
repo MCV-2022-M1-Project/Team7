@@ -1,10 +1,12 @@
 import numpy as np
 
-from typing import List, Protocol, Dict
+from abc import ABC
+from typing import List, Dict
 
 
-class FeaturesExtractor(Protocol):
+class FeaturesExtractor(ABC):
     name: str
+    returns_keypoints: bool = False 
 
     def __init__(self, *args, **kwargs) -> None:
         pass

@@ -106,6 +106,7 @@ class RandomFeaturesExtractor(FeaturesExtractor):
 @Registry.register_features_extractor
 class SIFTExtractor(FeaturesExtractor):
     name: str = "sift_features_extractor"
+    returns_keypoints: bool = True
 
     def __init__(self, n_keypoints=None, n_threads=2, scale = 3, *args, **kwargs) -> None:
         self.n_keypoints = n_keypoints
@@ -165,9 +166,12 @@ class SIFTExtractor(FeaturesExtractor):
 @Registry.register_features_extractor
 class ORBExtractor(FeaturesExtractor):
     name: str = "orb_features_extractor"
+    returns_keypoints: bool = True
+
     def __init__(self, n_keypoints=128, n_threads=2, scale = 3, *args, **kwargs)->None:
         self.n_keypoints = n_keypoints
         self.scale = scale
+
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         result = []
         if isinstance(self.n_keypoints, int): orb = cv2.ORB_create(self.n_keypoints)
