@@ -1,0 +1,24 @@
+tasks:  
+  - name: retrieval_distcomb
+
+    features_extractors: 
+      - name: sift_features_extractor
+        distance:
+          name: cosine
+          n_neighbors: 20
+
+    metrics:
+      - name: map
+        top_k: [1, 5, 10]
+
+    preprocessing:
+      - name: channels_denoise_preprocessor
+        h: 3
+        template_window_size: 7
+        search_window_size: 21
+      - name: laplacian_mask_preprocessor
+        channel: 1
+      - name: harris_text_detector
+
+    datasets:
+      - qsd1_w4
