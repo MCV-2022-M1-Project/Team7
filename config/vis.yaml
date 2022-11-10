@@ -1,0 +1,19 @@
+tasks:
+  - name: visualize
+    k_mixtures: 2
+    features_extractors:
+      - name: HOG_extractor
+        feats_w: 1.0
+        distance:
+          name: cosine
+          n_neighbors: 20
+    preprocessing:
+    - name: channels_denoise_preprocessor
+      h: 3
+      template_window_size: 7
+      search_window_size: 21
+    - name: fourier_mask_preprocessor
+      channel: 1
+    
+    datasets:
+      - qsd1_w1
