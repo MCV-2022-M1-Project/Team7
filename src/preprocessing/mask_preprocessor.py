@@ -1,3 +1,5 @@
+import logging
+
 import cv2
 import numpy as np
 from typing import Callable, Dict
@@ -923,3 +925,73 @@ class FourierMaskPreprocessor(Preprocessing):
         painting_bbs = [coords for _, coords in paintings]
         painting_bbs = sorted(painting_bbs, key=lambda x: x[1])
         return {"result": image.copy(), "mask":  final_mask, "bb": painting_bbs}
+
+
+@Registry.register_preprocessing
+class ContourMaskPreprocessor(Preprocessing):
+    name: str = "contour_mask_preprocessor"
+
+    def __init__(self, lower_threshold: int = 150, upper_threshold: int = 100, kernel_size: int = 35, **kwargs) -> None:
+        self.lower_threshold = lower_threshold
+        self.upper_threshold = upper_threshold
+        self.kernel_size = kernel_size
+
+    def findSignificantContours(self, contours, dim):
+        result = []
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if self.lower_threshold * self.lower_threshold < area < dim[0]*dim[1] - self.upper_threshold:
+                result.append(contour)
+        return result
+
+    def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
+        original_shape = image.shape[:2]
+        (height, width) = original_shape
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        edged = cv2.Canny(gray, 10, 100)
+
+        # dilate edges
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        dilate = cv2.dilate(edged, kernel, iterations=1)
+
+        # find the significant contours based on minimum & maximum area
+        first_contours, hierarchy = cv2.findContours(dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_KCOS)
+        significant_contours = self.findSignificantContours(first_contours, image.shape)
+
+        # create mask from significant contours
+        temp_mask = np.zeros(image.shape)
+        cv2.drawContours(temp_mask, significant_contours, -1, (255, 255, 255), cv2.FILLED)
+
+        # refine mask
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (self.kernel_size, self.kernel_size))
+        erosion = cv2.erode(temp_mask, kernel, iterations=2)
+        dilation = cv2.dilate(erosion, kernel, iterations=1)
+
+        # search for contours again in order to compose better mask
+        temp_mask = cv2.cvtColor(np.uint8(dilation), cv2.COLOR_BGR2GRAY)
+        contours, hierarchy = cv2.findContours(temp_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        significant_contours = self.findSignificantContours(contours, image.shape)
+
+        # find coordinates
+        painting_bbs = []
+        mask = np.zeros_like(temp_mask)
+        for contour in significant_contours:
+            rect = cv2.minAreaRect(contour)
+            box = cv2.boxPoints(rect)
+            box = np.int0(box)
+            rotation = rect[2]
+
+            hullImg = np.zeros((height, width), dtype=np.uint8)
+            cv2.drawContours(hullImg, [box], 0, 255, 1)
+
+            # Find all the corners
+            tr = max(box, key=lambda x: x[0] - x[1])
+            tl = min(box, key=lambda x: x[0] + x[1])
+            br = max(box, key=lambda x: x[0] + x[1])
+            bl = min(box, key=lambda x: x[0] - x[1])
+
+            painting_bbs.append((tl[0], tl[1], br[0], br[1]))
+            corner_list = np.array([tl, tr, br, bl])
+            mask = cv2.fillConvexPoly(mask, np.array(corner_list, 'int32'), 255)
+
+        return {"result": image.copy(), "mask": mask > 0, "bb": painting_bbs, "angle": rotation}
