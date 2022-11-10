@@ -54,8 +54,6 @@ def mixture(vects, k, num_clines = 100):
     CS = plt.contour(
         X, Y, Z, norm=LogNorm(vmin=1.0, vmax=1000.0), levels=np.logspace(1, 5, num = num_clines)
     )
-    plt.colorbar(CS, shrink=0.8, extend="both")
-
 
 
 def main(imgs, vects, k = 10):
