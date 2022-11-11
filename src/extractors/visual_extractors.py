@@ -6,6 +6,7 @@ import concurrent
 from typing import Dict, List
 
 from src.common.registry import Registry
+from src.common.utils import image_resize
 from src.extractors.base import FeaturesExtractor
 from src.tokenizers.base import BaseTokenizer
 
@@ -108,81 +109,68 @@ class SIFTExtractor(FeaturesExtractor):
     name: str = "sift_features_extractor"
     returns_keypoints: bool = True
 
-    def __init__(self, n_keypoints=None, n_threads=2, scale = 3, *args, **kwargs) -> None:
+    def __init__(self, n_keypoints=None, n_threads=2, max_size=424, *args, **kwargs) -> None:
         self.n_keypoints = n_keypoints
-        self.sift_size = 128
         self.n_threads = n_threads
-        self.scale = scale
+        self.max_size = max_size
 
     def process_imgs_mp(self, data):
         image = data[0]
         if isinstance(self.n_keypoints, int): sift = cv2.SIFT_create(self.n_keypoints)
         else: sift = cv2.SIFT_create()
 
-        image = cv2.resize(image, (image.shape[0] // self.scale, image.shape[1] // self.scale))
+        image = image_resize(image, self.max_size, self.max_size)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image = cv2.equalizeHist(image)
 
         keypoints, descriptors = sift.detectAndCompute(image, None)
 
-        if not isinstance(descriptors, np.ndarray):
-            descriptors = np.zeros((1, self.sift_size), dtype=np.float32)
+        if len(keypoints) < 1:
+            descriptors = np.zeros((self.n_keypoints, sift.descriptorSize()), np.float32)
 
         return descriptors
 
-        # if len(keypoints) > self.n_keypoints:
-        #     descriptors = descriptors[:self.n_keypoints, :]
-        # left = self.n_keypoints if not isinstance(
-        #     descriptors, np.ndarray) else self.n_keypoints - len(descriptors)
-
-        # if left:
-        #     fill = np.zeros(left * self.sift_size, dtype=np.float32)
-        #     if isinstance(descriptors, np.ndarray):
-        #         fill = np.hstack((descriptors.reshape(-1), fill))
-        #     return fill
-        # else:
-        #     return descriptors.reshape(-1).astype(np.float32)
-                
-        # if len(features[n]) != self.descriptor_size:
-        #     print(descriptors)
-
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
+        if len(images) == 1:
+            return {
+                "result": [self.process_imgs_mp(images)]
+            }
+
         with concurrent.futures.ProcessPoolExecutor(max_workers=self.n_threads) as executor:
             features = list(executor.map(
                 self.process_imgs_mp, 
                 [(img, ) for img in images]
                 ))
 
-        # mp_manager = mp.Manager()
-        # features = mp_manager.list([None for i in range(len(images))])
-        
-        # threads = [mp.Process(target=self.process_imgs_mp, args=(
-        #     images, features, i)) for i in range(self.n_threads)]
-        # [t.start() for t in threads]
-        # [t.join() for t in threads]
-
         return {
             "result": features,
         }
+
+
 @Registry.register_features_extractor
 class ORBExtractor(FeaturesExtractor):
     name: str = "orb_features_extractor"
     returns_keypoints: bool = True
 
-    def __init__(self, n_keypoints=128, n_threads=2, scale = 3, *args, **kwargs)->None:
+    def __init__(self, n_keypoints=5000, n_threads=2, max_size=256, *args, **kwargs)->None:
         self.n_keypoints = n_keypoints
-        self.scale = scale
+        self.max_size = max_size
 
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         result = []
+
         if isinstance(self.n_keypoints, int): orb = cv2.ORB_create(self.n_keypoints)
-        else: orb = cv2.ORB_create()        
+        else: orb = cv2.ORB_create()   
+
         for image in images:
-            
-            image = cv2.resize(image, (image.shape[0] // self.scale, image.shape[1] // self.scale))
+            image = image_resize(image, self.max_size, self.max_size)
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-            kp, des = orb.detectAndCompute(image,None)
-            #print(kp,des)
-            if(des  is not None):
-                result.append(des.reshape(-1))
+            keypoints, descriptors = orb.detectAndCompute(image,None)
+
+            if len(keypoints) < 1:
+                descriptors = np.zeros((self.n_keypoints, orb.descriptorSize()), np.float32)
+
+            result.append(descriptors)
+
         return {"result": result}
