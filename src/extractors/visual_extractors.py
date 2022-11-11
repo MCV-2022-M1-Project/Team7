@@ -146,23 +146,14 @@ class SIFTExtractor(FeaturesExtractor):
         #     print(descriptors)
 
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
-        with concurrent.futures.ProcessPoolExecutor(max_workers=self.n_threads) as executor:
-            features = list(executor.map(
-                self.process_imgs_mp, 
-                [(img, ) for img in images]
-                ))
-
-        # mp_manager = mp.Manager()
-        # features = mp_manager.list([None for i in range(len(images))])
-        
-        # threads = [mp.Process(target=self.process_imgs_mp, args=(
-        #     images, features, i)) for i in range(self.n_threads)]
-        # [t.start() for t in threads]
-        # [t.join() for t in threads]
-
-        return {
-            "result": features,
-        }
+        result = []
+        for img in images:
+            gray= cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+            sift = cv2.SIFT_create()
+            kp, des = sift.detectAndCompute(gray,None)
+            if(des  is not None):
+                result.append(des.reshape(-1))
+        return {"result": result}
 @Registry.register_features_extractor
 class ORBExtractor(FeaturesExtractor):
     name: str = "orb_features_extractor"
@@ -174,15 +165,25 @@ class ORBExtractor(FeaturesExtractor):
 
     def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
         result = []
-        if isinstance(self.n_keypoints, int): orb = cv2.ORB_create(self.n_keypoints)
-        else: orb = cv2.ORB_create()        
         for image in images:
-            
-            image = cv2.resize(image, (image.shape[0] // self.scale, image.shape[1] // self.scale))
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            img_gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+            img_gray = cv2.resize(img_gray, (256, 256), interpolation=cv2.INTER_AREA)
+            orb = cv2.ORB_create(scaleFactor=1.1, WTA_K=2, fastThreshold=5)
+            kp,des=orb.detectAndCompute(img_gray, mask=None)
+            if(des  is not None):
+                result.append(des.reshape(-1))
+        return {"result": result}
 
-            kp, des = orb.detectAndCompute(image,None)
-            #print(kp,des)
+@Registry.register_features_extractor
+class SURFExtractor(FeaturesExtractor):
+    name: str = "surf_features_extractor"
+    def __init__(self, n_keypoints=128, n_threads=2, scale = 3, *args, **kwargs)->None:
+        pass
+    def run(self, images: List[np.ndarray], **kwargs) -> Dict[str, np.ndarray]:
+        result = []
+        for image in images:
+            surf = cv2.xfeatures2d.SURF_create(400)
+            kp, des = surf.detectAndCompute(image,None)
             if(des  is not None):
                 result.append(des.reshape(-1))
         return {"result": result}
