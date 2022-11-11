@@ -56,7 +56,7 @@ class RetrievalDistCombTask(BaseTask):
                         n_neighbors=self.retrieval_dataset.size, metric=distance.get_reference())
                     knn_models[extractor.name].fit(feats)
                 else:
-                    sift_features = feats
+                    retr_keypoint_features = feats
 
         final_output_w1 = []
         final_output_w2 = []
@@ -70,14 +70,14 @@ class RetrievalDistCombTask(BaseTask):
             text_transcription = []
             text_tokens = []
 
-            # image = []
-            # contours, _ = cv2.findContours(self.query_dataset[sample.id].mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            # for contour in contours:
-            #     x, y, w, h = cv2.boundingRect(contour)
-            #     image.append(sample.image[y:y+h, x:x+w])
+            image = []
+            contours, _ = cv2.findContours(self.query_dataset[sample.id].mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            for contour in contours:
+                x, y, w, h = cv2.boundingRect(contour)
+                image.append(sample.image[y:y+h, x:x+w])
 
-            # if len(image) == 0:
-            #     image = [sample.image]
+            if len(image) == 0:
+                image = [sample.image]
 
             for pp in self.preprocessing:
                 output = []
@@ -154,17 +154,25 @@ class RetrievalDistCombTask(BaseTask):
                                 in_database[i] += 1
                         
                     else:
-                        # index_params = dict(algorithm=1, trees=5)
+                        # index_params = dict(algorithm=0, trees=5)
+                        # index_params = dict(algorithm = 6,
+                        #                     table_number = 6, # 12
+                        #                     key_size = 12,     # 20
+                        #                     multi_probe_level = 1) # 20 multi_probe_level = 1)
                         # search_params = dict(checks=50)
                         # matcher = cv2.FlannBasedMatcher(
                         #     index_params, search_params)
-                        matcher = cv2.BFMatcher()
+                        norm = {
+                            "hamming": cv2.NORM_HAMMING,
+                            "l2": cv2.NORM_L2
+                        }
+                        matcher = cv2.BFMatcher(norm[extractor_config.norm]) # cv2.NORM_HAMMING
                         ranking = []
                         
                         for i, query_feat in enumerate(feats):
                             n_matches_per_sample = []
 
-                            for retr_feat in sift_features:
+                            for retr_feat in retr_keypoint_features:
                                 try:
                                     matches = matcher.knnMatch(query_feat, retr_feat, k=2)
                                 except:
@@ -174,12 +182,14 @@ class RetrievalDistCombTask(BaseTask):
                                     n_matches_per_sample.append(0)
                                     continue
 
-                                n_matches = len([m for m, n in matches if m.distance < extractor_config.quality_thr*n.distance])
-                                n_matches_per_sample.append(n_matches)
+                                n_matches = len([m[0] for m in matches if len(m) == 2 and m[0].distance < extractor_config.quality_thr*m[1].distance])
+                                n_matches_per_sample.append(n_matches / len(matches))
                             
                             ranking.append(np.array(n_matches_per_sample).argsort()[::-1].argsort())
 
-                            if min(n_matches_per_sample) >= extractor_config.matches_thr:
+                            # if min(n_matches_per_sample) >= extractor_config.matches_thr:
+                            #     in_database[i] += 1
+                            if np.sort(n_matches_per_sample)[-1] >= extractor_config.matches_thr:
                                 in_database[i] += 1
 
                         ranking = np.array(ranking)

@@ -11,30 +11,52 @@ tasks:
     #     n_neighbors: 20
 
     features_extractors: 
-      - name: HOG_extractor
+      - name: sift_features_extractor
         feats_w: 1.0
-        distance:
-          name: cosine
-          n_neighbors: 20
-      # - name: grayscale_extractor
-      #   feats_w: 0.3
+        norm: l2
+        n_keypoints: 5000
+        max_size: 424
+        quality_thr: 0.5
+        matches_thr: 0.04
+      # - name: HOG_extractor
+      #   feats_w: 1.0
       #   distance:
-      #     name: l1
-      #     n_neighbors: 20
+      #     name: cosine
+      #     in_db_thr: 0.3
 
     metrics:
       - name: map
         top_k: [1, 5, 10]
 
     preprocessing:
-      # - name: channels_denoise_preprocessor
-      #   h: 3
-      #   template_window_size: 7
-      #   search_window_size: 21
-      # - name: fourier_mask_preprocessor
-      #   channel: 1
-      - name: text_detector_wo_mask
+      - name: visushrink_noise_preprocessor
+        h: 3
+        template_window_size: 7
+        search_window_size: 21
+      # - name: laplacian_mask_preprocessor
+      # - name: harris_text_detector
 
     datasets:
-      - qsd1_w1
-  
+      - qsd1_w4
+
+
+  # - name: retrieval_distcomb
+
+  #   features_extractors: 
+  #     - name: orb_features_extractor
+  #       feats_w: 1.0
+  #       norm: hamming
+  #       n_keypoints: 1000
+  #       max_size: 1024
+  #       quality_thr: 0.75
+  #       matches_thr: 0.05
+
+  #   metrics:
+  #     - name: map
+  #       top_k: [1, 5, 10]
+
+  #   preprocessing:
+  #     - name: visushrink_noise_preprocessor
+
+  #   datasets:
+  #     - qsd1_w4

@@ -121,7 +121,6 @@ class SIFTExtractor(FeaturesExtractor):
 
         image = image_resize(image, self.max_size, self.max_size)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image = cv2.equalizeHist(image)
 
         keypoints, descriptors = sift.detectAndCompute(image, None)
 
@@ -166,7 +165,7 @@ class ORBExtractor(FeaturesExtractor):
             image = image_resize(image, self.max_size, self.max_size)
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-            keypoints, descriptors = orb.detectAndCompute(image,None)
+            keypoints, descriptors = orb.detectAndCompute(image, None)
 
             if len(keypoints) < 1:
                 descriptors = np.zeros((self.n_keypoints, orb.descriptorSize()), np.float32)
