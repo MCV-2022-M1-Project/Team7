@@ -1,5 +1,6 @@
 tasks:  
   - name: retrieval_distcomb
+    # use_gt: True
 
     # tokenizer:
     #   name: bpe_tokenizer
@@ -41,6 +42,7 @@ tasks:
 
 
   # - name: retrieval_distcomb
+      # use_gt: True
 
   #   features_extractors: 
   #     - name: orb_features_extractor

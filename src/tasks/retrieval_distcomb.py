@@ -70,14 +70,15 @@ class RetrievalDistCombTask(BaseTask):
             text_transcription = []
             text_tokens = []
 
-            image = []
-            contours, _ = cv2.findContours(self.query_dataset[sample.id].mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            for contour in contours:
-                x, y, w, h = cv2.boundingRect(contour)
-                image.append(sample.image[y:y+h, x:x+w])
+            if self.config.use_gt:
+                image = []
+                contours, _ = cv2.findContours(self.query_dataset[sample.id].mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                for contour in contours:
+                    x, y, w, h = cv2.boundingRect(contour)
+                    image.append(sample.image[y:y+h, x:x+w])
 
-            if len(image) == 0:
-                image = [sample.image]
+                if len(image) == 0:
+                    image = [sample.image]
 
             for pp in self.preprocessing:
                 output = []
@@ -166,7 +167,7 @@ class RetrievalDistCombTask(BaseTask):
                             "hamming": cv2.NORM_HAMMING,
                             "l2": cv2.NORM_L2
                         }
-                        matcher = cv2.BFMatcher(norm[extractor_config.norm]) # cv2.NORM_HAMMING
+                        matcher = cv2.BFMatcher(norm[extractor_config.norm])
                         ranking = []
                         
                         for i, query_feat in enumerate(feats):

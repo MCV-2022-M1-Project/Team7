@@ -119,7 +119,9 @@ class SIFTExtractor(FeaturesExtractor):
         if isinstance(self.n_keypoints, int): sift = cv2.SIFT_create(self.n_keypoints)
         else: sift = cv2.SIFT_create()
 
-        image = image_resize(image, self.max_size, self.max_size)
+        if self.max_size > 0:
+            image = image_resize(image, self.max_size, self.max_size)
+
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         keypoints, descriptors = sift.detectAndCompute(image, None)
