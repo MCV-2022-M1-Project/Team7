@@ -1,4 +1,4 @@
-import logging
+import math
 
 import cv2
 import numpy as np
@@ -944,6 +944,14 @@ class ContourMaskPreprocessor(Preprocessing):
                 result.append(contour)
         return result
 
+    def rotate(self, pt, radians):
+        x, y = pt
+        cos_rad = math.cos(radians)
+        sin_rad = math.sin(radians)
+        qx = x * cos_rad + y * sin_rad
+        qy = -x * sin_rad + y * cos_rad
+        return [int(abs(qx)), int(abs(qy))]
+
     def run(self,  image, **kwargs) -> Dict[str, np.ndarray]:
         original_shape = image.shape[:2]
         (height, width) = original_shape
@@ -972,26 +980,38 @@ class ContourMaskPreprocessor(Preprocessing):
         contours, hierarchy = cv2.findContours(temp_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         significant_contours = self.findSignificantContours(contours, image.shape)
 
-        # find coordinates
+        angles = []
+        original_angles = []
         painting_bbs = []
         mask = np.zeros_like(temp_mask)
         for contour in significant_contours:
+            # refine mask
             rect = cv2.minAreaRect(contour)
             box = cv2.boxPoints(rect)
             box = np.int0(box)
-            rotation = rect[2]
 
             hullImg = np.zeros((height, width), dtype=np.uint8)
             cv2.drawContours(hullImg, [box], 0, 255, 1)
 
-            # Find all the corners
+            # find all the corners
             tr = max(box, key=lambda x: x[0] - x[1])
             tl = min(box, key=lambda x: x[0] + x[1])
             br = max(box, key=lambda x: x[0] + x[1])
             bl = min(box, key=lambda x: x[0] - x[1])
 
-            painting_bbs.append((tl[0], tl[1], br[0], br[1]))
-            corner_list = np.array([tl, tr, br, bl])
+            # draw mask from corners
+            corner_list = [[tl[0], tl[1]], [tr[0], tr[1]], [br[0], br[1]], [bl[0], bl[1]]]
+
+            painting_bbs.append(corner_list)
             mask = cv2.fillConvexPoly(mask, np.array(corner_list, 'int32'), 255)
 
-        return {"result": image.copy(), "mask": mask > 0, "bb": painting_bbs, "angle": rotation}
+            # calculate return angle
+            angle = rect[-1]
+            original_angles.append(angle)
+            if angle != 180.0 and angle != 0.0 and angle != 90:
+                angle = 90 - angle
+            if angle > 45:
+                angle = angle + 90
+            angles.append(angle)
+
+        return {"result": image.copy(), "mask": mask > 0, "bb": painting_bbs, "angles": angles, "original_angles": original_angles}

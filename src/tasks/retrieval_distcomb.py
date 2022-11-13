@@ -60,6 +60,7 @@ class RetrievalDistCombTask(BaseTask):
 
         final_output_w1 = []
         final_output_w2 = []
+        final_output_frame = []
 
         logging.info("Carrying out the task...")
 
@@ -91,9 +92,46 @@ class RetrievalDistCombTask(BaseTask):
                 if "bb" in output[0]:
                     images_list = []
                     bb_list = output[0]["bb"]
+                    if "angles" in output[0]:
+                        angles = output[0]["angles"]
+                        frame_output = []
+                        for i, bb in enumerate(bb_list):
+                            frame_output.append([angles[i], bb])
+                    if "original_angles" in output[0]:
+                        for i, bb in enumerate(bb_list):
+                            # calculate angle needed for opencv rotation
+                            angle = output[0]["original_angles"][i]
+                            if angle < -45:
+                                angle = -(90 + angle)
+                            else:
+                                angle = -angle
+                            neg_angle = -angle
 
-                    for bb in bb_list:
-                        images_list.append(image[0][bb[0]:bb[2], bb[1]:bb[3]])
+                            # rotate image only if needed
+                            if abs(angle) != 180.0 and abs(angle) != 0.0 and abs(angle) != 90:
+                                neg_angle = 90 - neg_angle
+                                neg_angle = -neg_angle
+                                if neg_angle < -45:
+                                    neg_angle = 90 + neg_angle
+
+                                M = cv2.getRotationMatrix2D((image[0].shape[1] // 2, image[0].shape[0] // 2), neg_angle, 1.0)
+                                rotated_image = cv2.warpAffine(image[0], M, (image[0].shape[1], image[0].shape[0]),
+                                                               flags=cv2.INTER_CUBIC,
+                                                               borderMode=cv2.BORDER_REPLICATE)
+                                # calculate new corner coordinates
+                                bb_points = np.array(bb).reshape((-1, 1, 2))
+                                rotated_points = cv2.transform(bb_points, M)
+
+                                tl_new = rotated_points[0][0]
+                                bl_new = rotated_points[3][0]
+                                tr_new = rotated_points[1][0]
+
+                                images_list.append(rotated_image[tl_new[1]:bl_new[1], tl_new[0]:tr_new[0]])
+                            else:
+                                images_list.append(image[0][bb[0][1]:bb[3][1], bb[0][0]:bb[1][0]])
+                    else:
+                        for bb in bb_list:
+                            images_list.append(image[0][bb[0]:bb[2], bb[1]:bb[3]])
 
                     if len(images_list) > 0:
                         image = images_list
@@ -153,7 +191,7 @@ class RetrievalDistCombTask(BaseTask):
 
                             if dist[0] <= extractor_config.distance.in_db_thr:
                                 in_database[i] += 1
-                        
+
                     else:
                         # index_params = dict(algorithm=0, trees=5)
                         # index_params = dict(algorithm = 6,
@@ -169,7 +207,7 @@ class RetrievalDistCombTask(BaseTask):
                         }
                         matcher = cv2.BFMatcher(norm[extractor_config.norm])
                         ranking = []
-                        
+
                         for i, query_feat in enumerate(feats):
                             n_matches_per_sample = []
 
@@ -185,7 +223,7 @@ class RetrievalDistCombTask(BaseTask):
 
                                 n_matches = len([m[0] for m in matches if len(m) == 2 and m[0].distance < extractor_config.quality_thr*m[1].distance])
                                 n_matches_per_sample.append(n_matches / len(matches))
-                            
+
                             ranking.append(np.array(n_matches_per_sample).argsort()[::-1].argsort())
 
                             # if min(n_matches_per_sample) >= extractor_config.matches_thr:
@@ -214,7 +252,7 @@ class RetrievalDistCombTask(BaseTask):
 
             top_k_pred = []
 
-            for i, r in enumerate(per_image_rankings): 
+            for i, r in enumerate(per_image_rankings):
                 if in_database[i] < len(self.extractors) / 2:
                     t = [-1]
                 else:
@@ -225,6 +263,8 @@ class RetrievalDistCombTask(BaseTask):
             final_output_w1.append([int(v) for v in top_k_pred[0][:10]])
             final_output_w2.append(
                 [[int(v) for v in top_k_pred[i][:10]] for i in range(len(image))])
+            final_output_frame.append(frame_output)
+
 
             if not inference_only:
                 for metric in self.metrics:
@@ -245,3 +285,6 @@ class RetrievalDistCombTask(BaseTask):
 
         with open(os.path.join(self.output_dir, "result_w2.pkl"), 'wb') as f:
             pickle.dump(final_output_w2, f)
+
+        with open(os.path.join(self.output_dir, "frames.pkl"), 'wb') as f:
+             pickle.dump(final_output_frame, f)
