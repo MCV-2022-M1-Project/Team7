@@ -2,6 +2,7 @@ import logging
 import os
 import cv2
 import pickle
+import numpy as np
 from tqdm import tqdm
 
 
@@ -29,7 +30,7 @@ class TextDetectionTask(BaseTask):
         final_output = []
 
         for sample in tqdm(self.query_dataset):
-            image = sample.image
+            image = [sample.image]
             annotation = sample.annotation
 
             if self.tokenizer is not None and annotation is not None:
@@ -43,20 +44,62 @@ class TextDetectionTask(BaseTask):
             text_tokens = []
 
             for pp in self.preprocessing:
-                if type(image) is list:
-                    output = []
+                output = []
 
-                    for img in image:
-                        output.append(pp.run(img))
-                else:
-                    output = [pp.run(image)]
+                for img in image:
+                    output.append(pp.run(img))
+
+                image = [o["result"] for o in output]
 
                 if "bb" in output[0]: # W! Output of painting masks are inverted: (y, x, y2, x2)
                     images_list = []
                     bb_list = output[0]["bb"]
+                    new_bb_list = []
+                    
+                    if "angles" in output[0]:
+                        angles = output[0]["angles"]
+                        frame_output = []
+                        for i, bb in enumerate(bb_list):
+                            frame_output.append([angles[i], bb])
+                    if "original_angles" in output[0]:
+                        for i, bb in enumerate(bb_list):
+                            # calculate angle needed for opencv rotation
+                            angle = output[0]["original_angles"][i]
+                            if angle < -45:
+                                angle = -(90 + angle)
+                            else:
+                                angle = -angle
+                            neg_angle = -angle
 
-                    for bb in bb_list:
-                        images_list.append(image[bb[0]:bb[2], bb[1]:bb[3]])
+                            # rotate image only if needed
+                            if abs(angle) != 180.0 and abs(angle) != 0.0 and abs(angle) != 90:
+                                neg_angle = 90 - neg_angle
+                                neg_angle = -neg_angle
+                                if neg_angle < -45:
+                                    neg_angle = 90 + neg_angle
+
+                                M = cv2.getRotationMatrix2D((image[0].shape[1] // 2, image[0].shape[0] // 2), neg_angle, 1.0)
+                                rotated_image = cv2.warpAffine(image[0], M, (image[0].shape[1], image[0].shape[0]),
+                                                               flags=cv2.INTER_CUBIC,
+                                                               borderMode=cv2.BORDER_REPLICATE)
+                                # calculate new corner coordinates
+                                bb_points = np.array(bb).reshape((-1, 1, 2))
+                                rotated_points = cv2.transform(bb_points, M)
+
+                                tl_new = rotated_points[0][0]
+                                bl_new = rotated_points[3][0]
+                                tr_new = rotated_points[1][0]
+
+                                images_list.append(rotated_image[tl_new[1]:bl_new[1], tl_new[0]:tr_new[0]])
+                                new_bb_list.append([tl_new[0], tl_new[1], bl_new[0], bl_new[1]])
+                            else:
+                                images_list.append(image[0][bb[0][1]:bb[3][1], bb[0][0]:bb[1][0]])
+                                new_bb_list.append([bb[0][0], bb[0][1], bb[1][0], bb[3][1]])
+
+                        bb_list = new_bb_list
+                    else:
+                        for bb in bb_list:
+                            images_list.append(image[0][bb[0]:bb[2], bb[1]:bb[3]])
 
                     if len(images_list) > 0:
                         image = images_list
@@ -81,10 +124,10 @@ class TextDetectionTask(BaseTask):
 
             if len(bb_list) > 0:
                 trans_corrected_bbs = [[
-                        image_bb[1] + text_bb[0],
-                        image_bb[0] + text_bb[1],
-                        image_bb[1] + text_bb[2],
-                        image_bb[0] + text_bb[3],
+                        image_bb[0] + text_bb[0],
+                        image_bb[1] + text_bb[1],
+                        image_bb[0] + text_bb[2],
+                        image_bb[1] + text_bb[3],
                     ] for image_bb, text_bb in zip(bb_list, text_boxes_pred)]
                 text_boxes_pred = trans_corrected_bbs
 

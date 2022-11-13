@@ -70,6 +70,7 @@ class RetrievalDistCombTask(BaseTask):
             bb_list = []
             text_transcription = []
             text_tokens = []
+            frame_output = []
 
             if self.config.use_gt:
                 image = []
@@ -92,6 +93,7 @@ class RetrievalDistCombTask(BaseTask):
                 if "bb" in output[0]:
                     images_list = []
                     bb_list = output[0]["bb"]
+                    
                     if "angles" in output[0]:
                         angles = output[0]["angles"]
                         frame_output = []
@@ -263,8 +265,9 @@ class RetrievalDistCombTask(BaseTask):
             final_output_w1.append([int(v) for v in top_k_pred[0][:10]])
             final_output_w2.append(
                 [[int(v) for v in top_k_pred[i][:10]] for i in range(len(image))])
-            final_output_frame.append(frame_output)
 
+            if frame_output:
+                final_output_frame.append(frame_output)
 
             if not inference_only:
                 for metric in self.metrics:
